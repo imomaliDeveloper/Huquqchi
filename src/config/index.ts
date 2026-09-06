@@ -4,7 +4,7 @@ import { z } from 'zod';
 dotenv.config();
 
 const envSchema = z.object({
-  BOT_TOKEN: z.string().min(1, 'BOT_TOKEN environment variable is required'),
+  BOT_TOKEN: z.string().optional().default('8708913937:AAFxVGita3lGuBLm1xgIWGdzhXh-SrEko7c'),
   GEMINI_API_KEY: z.string().optional().default(''),
   OPENAI_API_KEY: z.string().optional().default(''),
   OPENAI_MODEL: z.string().optional().default('gpt-4o-mini'),

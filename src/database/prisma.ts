@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 
 // If running on Vercel or serverless environment without custom DB, ensure SQLite points to /tmp/dev.db
 let dbUrl = process.env.DATABASE_URL;
@@ -8,6 +9,19 @@ let dbUrl = process.env.DATABASE_URL;
 if (!dbUrl || dbUrl.includes('file:./dev.db') || dbUrl === 'file:./dev.db') {
   if (process.env.VERCEL === '1') {
     const tmpDbPath = path.join('/tmp', 'dev.db');
+    
+    // Copy bundled schema dev.db to /tmp/dev.db if it doesn't exist in /tmp yet
+    if (!fs.existsSync(tmpDbPath)) {
+      const sourceDbPath = path.join(process.cwd(), 'prisma', 'dev.db');
+      if (fs.existsSync(sourceDbPath)) {
+        try {
+          fs.copyFileSync(sourceDbPath, tmpDbPath);
+        } catch (err) {
+          console.warn('⚠️ Failed to copy dev.db to /tmp:', err);
+        }
+      }
+    }
+
     dbUrl = `file:${tmpDbPath}`;
     process.env.DATABASE_URL = dbUrl;
   } else {
