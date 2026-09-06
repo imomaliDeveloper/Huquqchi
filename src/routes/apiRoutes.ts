@@ -4,7 +4,27 @@ import { AiService } from '../services/aiService';
 import { DocGeneratorService } from '../services/docGeneratorService';
 import { TtsService } from '../services/ttsService';
 
+import bot from '../bot';
+
 const router = Router();
+
+// Telegram Webhook Handler for Vercel Serverless
+router.post('/webhook', (req: Request, res: Response) => {
+  return bot.handleUpdate(req.body, res);
+});
+
+// Telegram Set Webhook Endpoint
+router.get('/set-webhook', async (req: Request, res: Response) => {
+  try {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const webhookUrl = `${protocol}://${host}/api/webhook`;
+    await bot.telegram.setWebhook(webhookUrl);
+    res.json({ ok: true, message: 'Telegram Webhook muvaffaqiyatli o‘rnatildi!', webhookUrl });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err?.message || 'Webhook o‘rnatishda xatolik' });
+  }
+});
 
 // Health Check
 router.get('/health', (req: Request, res: Response) => {
