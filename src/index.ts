@@ -12,7 +12,7 @@ async function bootstrap() {
     // Auto-verify and sync database tables on startup
     try {
       const { execSync } = require('child_process');
-      execSync('npx prisma db push --skip-generate', { stdio: 'inherit' });
+      execSync('npx prisma db push --skip-generate', { stdio: 'inherit', shell: true });
       console.log('✅ Database schema verified and synced.');
     } catch (err: any) {
       console.warn('⚠️ DB schema sync warning:', err?.message);
