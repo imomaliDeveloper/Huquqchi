@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="uz" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Huquqchi AI — Telegram Mini App</title>
+
+  <!-- PWA Manifest & Service Worker -->
+  <link rel="manifest" href="/manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            },
+            darkBg: '#0b0f19',
+            cardBg: 'rgba(17, 24, 39, 0.75)',
+          },
+          fontFamily: {
+            sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome & Google Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-glow {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.18) 0%, rgba(139, 92, 246, 0.12) 100%);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .active-tab {
+      color: #60a5fa;
+    }
+    .active-tab .icon-bg {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+    .animate-pulse-glow {
+      animation: pulseGlow 2.5s infinite;
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #D97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-24 text-slate-100 antialiased overflow-x-hidden">
+
+  <!-- TOP HEADER BAR -->
+  <header class="sticky top-0 z-40 glass-card border-b border-slate-800/80 px-4 py-3 flex items-center justify-between shadow-xl">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/25">
+        ⚖️
+      </div>
+      <div>
+        <h1 class="text-base font-bold leading-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+          Huquqchi AI Pro
+        </h1>
+        <p class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> O'zbekiston Rasmiy Yuridik AI
+        </p>
+      </div>
+    </div>
+
+    <!-- VIP PRO & User Profile Badge -->
+    <div onclick="openProfileModal()" class="cursor-pointer flex items-center gap-2 bg-gradient-to-r from-slate-800/90 to-slate-900/90 hover:from-slate-700/90 border border-blue-500/30 hover:border-blue-500/60 rounded-full px-3 py-1.5 text-xs transition-all shadow-md active:scale-95">
+      <i class="fa-solid fa-user-gear text-blue-400"></i>
+      <span id="headerUserName" class="font-semibold text-slate-200">Mehmon</span>
+      <span id="headerUserRole" class="text-[10px] bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded-full font-mono border border-blue-500/30">Profil & Login</span>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER WITH TABS -->
+  <main class="max-w-md mx-auto px-4 pt-4">
+
+    <!-- 1. DASHBOARD TAB -->
+    <section id="tab-dashboard" class="tab-content space-y-4">
+      
+      <!-- HERO BANNER -->
+      <div class="relative overflow-hidden rounded-2xl glass-card-glow p-5 shadow-2xl">
+        <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-blue-500/25 rounded-full blur-2xl animate-pulse-glow"></div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="inline-block px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-400/30">
+            🌟 Intelligent Legal Engine v2.0
+          </span>
+          <button onclick="openProModal()" class="text-xs gold-gradient-text font-bold flex items-center gap-1">
+            <i class="fa-solid fa-crown text-amber-400"></i> VIP Obuna
+          </button>
+        </div>
+        <h2 class="text-xl font-extrabold text-white mb-1.5 leading-snug">
+          O‘zbekiston Qonunchiligi Bo‘yicha AI Yuristingiz
+        </h2>
+        <p class="text-xs text-slate-300 mb-4 leading-relaxed">
+          Kuniga 2 ta Bepul AI savol berishingiz mumkin. VIP PRO bilan cheksiz foydalaning!
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="switchTab('ai')" class="py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/30 flex items-center justify-center gap-1.5 transition-all active:scale-95">
+            <i class="fa-solid fa-sparkles"></i> AI Bilan Muloqot
+          </button>
+          <button onclick="switchTab('quiz')" class="py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-purple-600/30 flex items-center justify-center gap-1.5 transition-all active:scale-95">
+            <i class="fa-solid fa-graduation-cap"></i> Milliy Sertifikat
+          </button>
+        </div>
+      </div>
+
+      <!-- QUICK STATS CARDS -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="glass-card rounded-xl p-3 text-center border border-slate-800 shadow-md">
+          <div class="text-blue-400 text-lg mb-1"><i class="fa-solid fa-book-bookmark"></i></div>
+          <div class="text-base font-bold text-white" id="statArticles">155+</div>
+          <div class="text-[10px] text-slate-400 font-medium">Moddalar</div>
+        </div>
+        <div class="glass-card rounded-xl p-3 text-center border border-slate-800 shadow-md">
+          <div class="text-purple-400 text-lg mb-1"><i class="fa-solid fa-graduation-cap"></i></div>
+          <div class="text-base font-bold text-white" id="statQuizzes">40+</div>
+          <div class="text-[10px] text-slate-400 font-medium">Testlar</div>
+        </div>
+        <div class="glass-card rounded-xl p-3 text-center border border-slate-800 shadow-md">
+          <div class="text-emerald-400 text-lg mb-1"><i class="fa-solid fa-file-contract"></i></div>
+          <div class="text-base font-bold text-white">4 xil</div>
+          <div class="text-[10px] text-slate-400 font-medium">PDF Hujjat</div>
+        </div>
+      </div>
+
+      <!-- CORE SERVICES GRID -->
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-blue-400"></i> Asosiy Xizmatlar Katalogi
+        </h3>
+        <div class="grid grid-cols-2 gap-3">
+          <!-- 1. AI CHAT -->
+          <div onclick="switchTab('ai')" class="glass-card p-4 rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all cursor-pointer group active:scale-95">
+            <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-brain"></i>
+            </div>
+            <h4 class="font-bold text-sm text-white">AI Konsultatsiya</h4>
+            <p class="text-[11px] text-slate-400">Kunlik 2 ta bepul limit bilan</p>
+          </div>
+
+          <!-- 2. PDF HUJJAT GENERATOR -->
+          <div onclick="switchTab('doc')" class="glass-card p-4 rounded-xl border border-indigo-500/40 bg-indigo-500/5 hover:border-indigo-500 transition-all cursor-pointer group active:scale-95">
+            <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <h4 class="font-bold text-sm text-white flex items-center justify-between">
+              PDF Hujjat <span class="text-[9px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded font-mono">Avto-PDF</span>
+            </h4>
+            <p class="text-[11px] text-slate-300">Shartnoma & Arizalar</p>
+          </div>
+
+          <!-- 3. MILLIY SERTIFIKAT -->
+          <div onclick="switchTab('quiz')" class="glass-card p-4 rounded-xl border border-purple-500/40 bg-purple-500/5 hover:border-purple-500 transition-all cursor-pointer group active:scale-95">
+            <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h4 class="font-bold text-sm text-white">Milliy Sertifikat</h4>
+            <p class="text-[11px] text-slate-400">Rasmiy Imtihon & Darajalar</p>
+          </div>
+
+          <!-- 4. SHARTNOMA AUDIT -->
+          <div onclick="switchTab('risk')" class="glass-card p-4 rounded-xl border border-slate-800 hover:border-amber-500/50 transition-all cursor-pointer group active:scale-95">
+            <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-2 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-shield-cat"></i>
+            </div>
+            <h4 class="font-bold text-sm text-white">Shartnoma Audit</h4>
+            <p class="text-[11px] text-slate-400">AI Xatarlarni & Jarimalarni aniqlash</p>
+          </div>
+
+          <!-- 5. QONUNLAR & LEX.UZ -->
+          <div onclick="switchTab('const')" class="glass-card p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500 transition-all cursor-pointer group active:scale-95 col-span-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-book-open-reader"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                  52 ta Sertifikat Qonunchiligi <span class="text-[9px] bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded font-mono">Lex.uz</span>
+                </h4>
+                <p class="text-[11px] text-slate-300">Milliy Sertifikat uchun 52 ta tavsiya etilgan qonun va kodekslar</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 2. AI CHAT TAB -->
+    <section id="tab-ai" class="tab-content hidden flex flex-col h-[calc(100vh-140px)]">
+      <!-- Chat Header -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-t-xl p-3 flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-sm font-bold shadow-md shadow-blue-500/30">
+            🤖
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white">Huquq AI Assistant</h3>
+            <span class="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">● Online (Gemini 3.6 Flash)</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="openChatHistoryModal()" class="text-xs text-slate-300 hover:text-blue-400 transition-colors px-2 py-1 bg-slate-800 rounded-lg flex items-center gap-1">
+            <i class="fa-solid fa-clock-rotate-left text-blue-400"></i> Tarix
+          </button>
+          <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-red-400 transition-colors px-2 py-1 bg-slate-800 rounded-lg">
+            <i class="fa-solid fa-trash-can"></i> Tozalash
+          </button>
+        </div>
+      </div>
+
+      <!-- Chat Messages Container -->
+      <div id="chatContainer" class="flex-1 glass-card border-x border-slate-800 p-3 overflow-y-auto space-y-3 no-scrollbar">
+        <div class="flex items-start gap-2 max-w-[85%]">
+          <div class="w-7 h-7 rounded-full bg-blue-600/30 text-blue-400 flex items-center justify-center text-xs">🤖</div>
+          <div class="bg-slate-800/90 text-xs text-slate-200 p-3 rounded-2xl rounded-tl-none border border-slate-700/50 leading-relaxed shadow-sm">
+            Assalomu alaykum! Men O‘zbekiston Respublikasi qonunchiligi bo‘yicha yuridik ekspertingizman. (Bepul kunlik limit: 2 ta). Qanday yuridik savolingiz bor?
+          </div>
+        </div>
+      </div>
+
+      <!-- Preset Quick Questions -->
+      <div class="py-2 flex gap-1.5 overflow-x-auto no-scrollbar">
+        <button onclick="setAiQuestion('Mehnat ta\'tili necha ish kuni beriladi?')" class="whitespace-nowrap px-3 py-1 bg-slate-800/80 hover:bg-slate-700 text-[11px] text-slate-300 rounded-full border border-slate-700">
+          💼 Mehnat ta'tili haqida
+        </button>
+        <button onclick="setAiQuestion('Uy-joy ijara shartnomasida nimalarga e\'tibor berish kerak?')" class="whitespace-nowrap px-3 py-1 bg-slate-800/80 hover:bg-slate-700 text-[11px] text-slate-300 rounded-full border border-slate-700">
+          🏠 Ijara shartnomasi
+        </button>
+        <button onclick="setAiQuestion('Qarz shartnomasini guvohlantirish shartmi?')" class="whitespace-nowrap px-3 py-1 bg-slate-800/80 hover:bg-slate-700 text-[11px] text-slate-300 rounded-full border border-slate-700">
+          💰 Qarz va Tilxat
+        </button>
+      </div>
+
+      <!-- Input Bar -->
+      <form id="aiChatForm" class="flex gap-2 pt-1 pb-3">
+        <button type="button" onclick="startVoiceInput()" id="micBtn" title="Ovozli gapirish" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold border border-slate-700 flex items-center justify-center active:scale-95 transition-all">
+          <i class="fa-solid fa-microphone text-blue-400" id="micIcon"></i>
+        </button>
+        <input type="text" id="aiInput" placeholder="Yuridik savolingizni yozing..." class="flex-1 bg-slate-800/90 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500">
+        <button type="submit" id="aiSendBtn" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center shadow-lg shadow-blue-500/20 active:scale-95 transition-transform">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </section>
+
+    <!-- 3. AI CONTRACT RISK AUDIT TAB -->
+    <section id="tab-risk" class="tab-content hidden space-y-4">
+      <div class="glass-card p-4 rounded-xl border border-slate-800 shadow-xl">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-base font-bold">
+            🛡
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">AI Shartnoma Ekspertizasi</h3>
+            <p class="text-[11px] text-slate-400">Shartnoma matnini kiriting, AI xatarlarni aniqlaydi</p>
+          </div>
+        </div>
+
+        <form id="riskCheckForm" class="space-y-3 pt-2">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Shartnoma matnidan namuna ko'chiring:</label>
+            <textarea id="riskContractText" rows="6" placeholder="Shartnoma moddalari, jarimalari yoki shartlarini bu yerga paste qiling..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 leading-relaxed"></textarea>
+          </div>
+          <button type="submit" id="riskSubmitBtn" class="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 active:scale-95">
+            <i class="fa-solid fa-magnifying-glass-chart"></i> AI Xatarlarni Tahlil Qilish
+          </button>
+        </form>
+
+        <div id="riskResultBox" class="hidden mt-4 bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 leading-relaxed text-xs text-slate-200 space-y-2">
+          <!-- Dynamic Risk Result -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. MILLIY SERTIFIKAT TEST TAB -->
+    <section id="tab-quiz" class="tab-content hidden space-y-4">
+      <div class="glass-card p-4 rounded-xl border border-purple-500/30 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-lg font-bold">
+              🎓
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">Milliy Yuridik Sertifikat</h3>
+              <p class="text-[10px] text-purple-300 font-mono">Rasmiy Imtihon Simulyatori</p>
+            </div>
+          </div>
+          <span class="text-[10px] bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded-full border border-purple-500/30">
+            A+ / A / B+ Grade
+          </span>
+        </div>
+
+        <!-- Grade Scale Info -->
+        <div class="grid grid-cols-4 gap-1.5 text-center text-[10px]">
+          <div class="bg-slate-900/90 border border-emerald-500/40 p-2 rounded-lg">
+            <div class="font-bold text-emerald-400 text-xs">A+</div>
+            <div class="text-slate-400">90% - 100%</div>
+          </div>
+          <div class="bg-slate-900/90 border border-blue-500/40 p-2 rounded-lg">
+            <div class="font-bold text-blue-400 text-xs">A</div>
+            <div class="text-slate-400">80% - 89%</div>
+          </div>
+          <div class="bg-slate-900/90 border border-purple-500/40 p-2 rounded-lg">
+            <div class="font-bold text-purple-400 text-xs">B+</div>
+            <div class="text-slate-400">70% - 79%</div>
+          </div>
+          <div class="bg-slate-900/90 border border-amber-500/40 p-2 rounded-lg">
+            <div class="font-bold text-amber-400 text-xs">B</div>
+            <div class="text-slate-400">60% - 69%</div>
+          </div>
+        </div>
+
+        <!-- Active Quiz Box -->
+        <div id="quizBox" class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span id="quizQuestionNum" class="text-xs font-bold text-purple-400">Savol 1 / 5</span>
+            <span id="quizTimer" class="text-xs font-mono bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30">⏱ 00:30</span>
+          </div>
+          <h4 id="quizQuestionText" class="text-sm font-semibold text-white mb-4 leading-snug">
+            O‘zbekiston Respublikasida Oliy hokimiyatning birinchi manbai nima?
+          </h4>
+          <div id="quizOptions" class="space-y-2">
+            <!-- Dynamic Options -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- 5. QONUNLAR TAB (MILLIY SERTIFIKAT 52 TA QONUN & LEX.UZ LINKS) -->
+    <section id="tab-const" class="tab-content hidden space-y-4">
+      <div class="glass-card p-4 rounded-xl border border-emerald-500/40 shadow-xl space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold">
+              📜
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">Qonunchilik & Rasmiy Hujjatlar</h3>
+              <p class="text-[10px] text-emerald-300 font-mono">Milliy Sertifikat uchun 52 ta Qonun</p>
+            </div>
+          </div>
+          <span class="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+            Lex.uz Havolalar
+          </span>
+        </div>
+
+        <!-- Filter Sub-tabs & Legal Branch Category Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar text-xs font-semibold">
+          <button onclick="filterLawsCategory('bookmarks', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-xl hover:bg-amber-500/30 transition-all flex items-center gap-1">
+            ⭐ Saqlanganlar
+          </button>
+          <button onclick="filterLawsCategory('recommended', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-emerald-600 text-white rounded-xl shadow-md transition-all">
+            🌟 Barchasi (Sertifikat)
+          </button>
+          <button onclick="filterLawsCategory('constitution', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            🏛 Konstitutsiya Moddalari
+          </button>
+          <button onclick="filterLawsCategory('Fuqarolik Huquqi', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            ⚖️ Fuqarolik Huquqi
+          </button>
+          <button onclick="filterLawsCategory('Ma\'muriy Huquq', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            🚨 Ma'muriy Huquq
+          </button>
+          <button onclick="filterLawsCategory('Mehnat Huquqi', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            💼 Mehnat Huquqi
+          </button>
+          <button onclick="filterLawsCategory('Oila Huquqi', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            👨‍👩‍👧 Oila Huquqi
+          </button>
+          <button onclick="filterLawsCategory('Jinoyat Huquqi', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            🔒 Jinoyat Huquqi
+          </button>
+          <button onclick="filterLawsCategory('Soliq & Moliya', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            💰 Soliq & Moliya
+          </button>
+          <button onclick="filterLawsCategory('Ekologiya & Yer', this)" class="law-cat-btn flex-shrink-0 px-3 py-1.5 bg-slate-800 text-slate-400 hover:bg-slate-700 rounded-xl transition-all">
+            🌿 Ekologiya & Yer
+          </button>
+        </div>
+
+        <input type="text" id="constSearchInput" oninput="handleLawSearchInput(this.value)" placeholder="Qonun yoki Kodeks nomidan qidirish (masalan: Mehnat kodeksi)..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 shadow-inner">
+        
+        <div id="constArticlesList" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 no-scrollbar">
+          <!-- Dynamic 52 Recommended Laws & Lex.uz Links -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. DOCUMENT GENERATOR TAB -->
+    <section id="tab-doc" class="tab-content hidden space-y-4">
+      <div class="glass-card p-4 rounded-xl border border-slate-800 shadow-xl">
+        <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+          <i class="fa-solid fa-file-signature text-indigo-400"></i> PDF Hujjat Generatori
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Rasmiy shartnoma va arizalarni avtomatlashtirilgan PDF shaklida yuklab oling.
+        </p>
+
+        <form id="docForm" class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Hujjat Turini Tanlang</label>
+            <select id="docTypeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+              <option value="IJARA_SHARTNOMASI">🏠 Uy-Joy Ijara Shartnomasi</option>
+              <option value="QARZ_TILI_XATI">💰 Qarz va Tilxat Hujjati</option>
+              <option value="MEHNAT_SHARTNOMASI">💼 Mehnat Shartnomasi</option>
+              <option value="DAVO_ARIZASI">⚖️ Sudga Da'vo Arizasi</option>
+              <option value="ISHONCHNOMA">📜 Ishonchnoma (Doverennost)</option>
+              <option value="OLDI_SOTDI_SHARTNOMASI">🚗 Mulk / Avtomobil Oldi-Sotdi Shartnomasi</option>
+              <option value="NIKOH_SHARTNOMASI">💍 Nikoh Shartnomasi</option>
+              <option value="XIZMAT_KORSATISH_SHARTNOMASI">🏢 Xizmat Ko'rsatish Shartnomasi</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">1-Taraf (F.I.SH)</label>
+              <input type="text" id="partyAName" placeholder="Masalan: Aliyev Vali" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">2-Taraf (F.I.SH)</label>
+              <input type="text" id="partyBName" placeholder="Masalan: Karimov Sobir" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Summa yoki Qiymati (UZS / USD)</label>
+            <input type="text" id="docAmount" placeholder="Masalan: 3,000,000 UZS" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Qo'shimcha tafsilotlar / Manzil</label>
+            <textarea id="docDetails" rows="2" placeholder="Masalan: Toshkent sh. Chilonzor tumani 5-mavze 12-uy" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"></textarea>
+          </div>
+
+          <button type="submit" id="docGenerateBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 active:scale-95">
+            <i class="fa-solid fa-download"></i> PDF Hujjatni Yaratish va Yuklab Olish
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FLOATING CONSTITUTION AUDIO PLAYER BAR -->
+  <div id="audioPlayerBar" class="fixed bottom-16 left-4 right-4 z-40 max-w-md mx-auto glass-card-glow rounded-2xl p-3 border border-emerald-500/40 shadow-2xl hidden flex items-center justify-between transition-all">
+    <div class="flex items-center gap-3">
+      <button id="audioPlayBtn" onclick="toggleConstAudio()" class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-900 font-bold flex items-center justify-center text-lg shadow-lg shadow-emerald-500/30 active:scale-95">
+        <i id="audioPlayIcon" class="fa-solid fa-play"></i>
+      </button>
+      <div>
+        <h4 id="audioArticleTitle" class="text-xs font-bold text-white">1-modda Audiosi</h4>
+        <p id="audioStatusText" class="text-[10px] text-emerald-300 font-mono">🎧 Ijro etilmoqda...</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <audio id="globalAudioPlayer" class="hidden"></audio>
+      <button onclick="closeConstAudio()" class="text-xs text-slate-400 hover:text-white p-2">✕</button>
+    </div>
+  </div>
+
+  <!-- MODAL: VIP PRO UPGRADE MODAL -->
+  <div id="proModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card-glow max-w-sm w-full rounded-2xl p-5 border border-amber-500/40 relative space-y-4 shadow-2xl">
+      <button onclick="closeProModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs hover:text-white">
+        ✕
+      </button>
+
+      <div class="text-center space-y-1">
+        <div class="text-3xl mb-1">👑</div>
+        <h3 class="text-lg font-bold text-white gold-gradient-text">VIP PRO Obuna</h3>
+        <p class="text-xs text-slate-300">Kunlik 2 ta limitni olib tashlash & Cheksiz AI</p>
+      </div>
+
+      <div class="space-y-2 text-xs text-slate-200">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Cheksiz AI Yuridik konsultatsiyalar (Limitsiz)</div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> AI Shartnoma Audit va Risk analizi</div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Barcha PDF Kitoblar va Milliy Sertifikatlar</div>
+      </div>
+
+      <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl text-center space-y-1">
+        <div class="text-[11px] text-slate-400">1 Oylik VIP PRO</div>
+        <div class="text-lg font-extrabold text-amber-400">29,000 UZS</div>
+      </div>
+
+      <button onclick="payViaTelegram()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 active:scale-95">
+        💳 Telegram Orqali To'lov Qilish
+      </button>
+    </div>
+  </div>
+
+  <!-- PROFILE & REGISTRATION MODAL -->
+  <div id="profileModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl relative">
+      <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 text-sm">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-blue-500/30">
+          👤
+        </div>
+        <div>
+          <h3 class="text-sm font-extrabold text-white" id="modalUserName">Mehmon Foydalanuvchi</h3>
+          <p class="text-[11px] text-emerald-400 font-semibold flex items-center gap-1" id="modalUserSub">
+            <i class="fa-solid fa-circle-check text-[10px]"></i> Telegram Profil Tizimda
+          </p>
+        </div>
+      </div>
+
+      <form id="profileForm" onsubmit="handleProfileSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">Ismingiz</label>
+          <input type="text" id="profFirstName" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">Familiyangiz (Ixtiyoriy)</label>
+          <input type="text" id="profLastName" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">Huquqiy Maqomingiz / Sohangiz</label>
+          <select id="profRole" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+            <option value="FUQARO">🏛️ Oddiy Fuqaro / Mijoz</option>
+            <option value="TALABA">🎓 Huquqshunoslik Talabasi</option>
+            <option value="ABITURIYENT">📚 Milliy Sertifikat Topshiruvchi</option>
+            <option value="YURIST">⚖️ Yurist / Advokat</option>
+            <option value="O'QITUVCHI">👨‍🏫 Huquq O'qituvchisi</option>
+            <option value="TADBIRKOR">💼 Tadbirkor</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">Telefon Raqamingiz (Ixtiyoriy)</label>
+          <input type="tel" id="profPhone" placeholder="+998 90 123 45 67" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 flex items-center justify-between text-xs">
+          <div>
+            <span class="text-slate-400 text-[10px]">Kunlik AI Savol Kvotasi:</span>
+            <div class="font-bold text-emerald-400 text-xs" id="profAiQuota">2 ta / Bepul</div>
+          </div>
+          <button type="button" onclick="closeProfileModal(); openProModal();" class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-lg font-bold border border-amber-500/40 hover:bg-amber-500/30 text-[10px]">
+            <i class="fa-solid fa-crown"></i> PRO Olish
+          </button>
+        </div>
+
+        <button type="submit" id="btnSaveProfile" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/30 active:scale-95 transition-all">
+          <i class="fa-solid fa-user-check mr-1"></i> Saqlash & Ro'yxatdan O'tish
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI CHAT HISTORY MODAL -->
+  <div id="chatHistoryModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl relative max-h-[80vh] flex flex-col">
+      <button onclick="closeChatHistoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 text-sm">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <i class="fa-solid fa-clock-rotate-left text-blue-400 text-lg"></i>
+        <h3 class="text-sm font-extrabold text-white">Yuridik Muloqotlar Tarixi</h3>
+      </div>
+
+      <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 no-scrollbar text-xs">
+        <div class="text-slate-400 p-4 text-center">Tarix yuklanmoqda...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-slate-800/80 px-1 py-2 shadow-2xl">
+    <div class="max-w-md mx-auto flex items-center justify-around">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex flex-col items-center gap-1 active-tab text-slate-400 hover:text-blue-400 transition-colors">
+        <div class="icon-bg p-1.5 rounded-xl text-base"><i class="fa-solid fa-house"></i></div>
+        <span class="text-[9px] font-semibold">Asosiy</span>
+      </button>
+
+      <button onclick="switchTab('ai')" id="nav-ai" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-blue-400 transition-colors">
+        <div class="icon-bg p-1.5 rounded-xl text-base"><i class="fa-solid fa-sparkles"></i></div>
+        <span class="text-[9px] font-semibold">AI Chat</span>
+      </button>
+
+      <button onclick="switchTab('const')" id="nav-const" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 transition-colors">
+        <div class="icon-bg p-1.5 rounded-xl text-base"><i class="fa-solid fa-book-open-reader"></i></div>
+        <span class="text-[9px] font-semibold">Qonunlar</span>
+      </button>
+
+
+      <button onclick="switchTab('quiz')" id="nav-quiz" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-purple-400 transition-colors">
+        <div class="icon-bg p-1.5 rounded-xl text-base"><i class="fa-solid fa-graduation-cap"></i></div>
+        <span class="text-[9px] font-semibold">Sertifikat</span>
+      </button>
+
+      <button onclick="switchTab('risk')" id="nav-risk" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 transition-colors">
+        <div class="icon-bg p-1.5 rounded-xl text-base"><i class="fa-solid fa-shield-halved"></i></div>
+        <span class="text-[9px] font-semibold">Audit</span>
+      </button>
+
+      <button onclick="switchTab('doc')" id="nav-doc" class="nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-400 transition-colors">
+        <div class="icon-bg p-1.5 rounded-xl text-base"><i class="fa-solid fa-file-pdf"></i></div>
+        <span class="text-[9px] font-semibold">Hujjat</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Dynamic JS Script -->
+  <script src="/app.js?v=1005"></script>
+</body>
+</html>

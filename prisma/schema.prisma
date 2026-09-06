@@ -1,0 +1,198 @@
+// Prisma Schema for HuquqchiBot / Huquq AI
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  telegramId    BigInt         @unique
+  username      String?
+  firstName     String
+  lastName      String?
+  phone         String?
+  role          String?        // ABITURIYENT | FUQARO | TALABA | TADBIRKOR | YURIST
+  isPro         Boolean        @default(false)
+  referredById  Int?
+  referralCount Int            @default(0)
+  voiceCount    Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  referredBy    User?          @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals     User[]         @relation("UserReferrals")
+
+  quizResults     QuizResult[]
+  aiConversations AIConversation[]
+  activities      UserActivity[]
+  subscriptions   Subscription[]
+  certResults     CertResult[]
+
+  @@map("users")
+}
+
+model Category {
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
+  description String?
+  articles    LegalArticle[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("categories")
+}
+
+model LegalArticle {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  source      String?
+  fileId      String?  // Telegram PDF Document File ID for downloading
+  fileType    String?  // "pdf" | "docx" | "txt"
+  isPdfBook   Boolean  @default(false)
+  price       Int      @default(0) // 0 means Free / VIP PRO
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("legal_articles")
+}
+
+model Quiz {
+  id          Int            @id @default(autoincrement())
+  title       String
+  description String?
+  category    String?
+  questions   QuizQuestion[]
+  results     QuizResult[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            Int      @id @default(autoincrement())
+  quizId        Int
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question      String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctAnswer String   // "A", "B", "C", "D"
+  explanation   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("quiz_questions")
+}
+
+model QuizResult {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizId          Int
+  quiz            Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score           Int
+  totalQuestions  Int
+  percentage      Float
+  durationSeconds Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("quiz_results")
+}
+
+model CertResult {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score           Int
+  totalQuestions  Int
+  percentage      Float
+  gradeLevel      String   // "A+" | "A" | "B+" | "B" | "C"
+  durationSeconds Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("cert_results")
+}
+
+model Subscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      String   // "PRO_MONTHLY" | "PRO_YEARLY"
+  amount    Int      @default(29000)
+  startDate DateTime @default(now())
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("subscriptions")
+}
+
+model AIConversation {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  messages  AIMessage[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id             Int            @id @default(autoincrement())
+  conversationId Int
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String         // "user" | "assistant"
+  content        String
+  createdAt      DateTime       @default(now())
+
+  @@map("ai_messages")
+}
+
+model Admin {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique
+  username   String?
+  role       String   @default("admin") // "superadmin", "admin"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model UserActivity {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@map("user_activities")
+}
+
+model ConstitutionArticle {
+  id            Int      @id @default(autoincrement())
+  articleNumber Int      @unique // 0 = Muqaddima, 1 = 1-modda, ..., 155 = 155-modda
+  title         String   // e.g. "Muqaddima" or "1-modda"
+  chapter       String?  // e.g. "1-BOB. Davlat suvereniteti"
+  part          String?  // e.g. "BIRINCHI BO‘LIM. ASOSIY PRINSIPLAR"
+  text          String   // Modda matni
+  audioFileId   String?  // Telegram Audio/Voice File ID
+  audioDuration Int?     // Duration in seconds
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("constitution_articles")
+}

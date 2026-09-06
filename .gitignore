@@ -1,0 +1,28 @@
+# Node.js dependencies (NPM)
+node_modules/
+
+# Production build output
+dist/
+
+# Environment variables & secret keys (CRITICAL)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# SQLite local databases & logs
+prisma/*.db
+prisma/*.db-journal
+*.db
+*.db-journal
+*.sqlite
+*.log
+cf.log
+
+# IDE & OS system files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
