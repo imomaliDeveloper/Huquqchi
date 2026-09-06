@@ -4,8 +4,14 @@ import bot from '../src/bot';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
-      if (req.body) {
-        await bot.handleUpdate(req.body);
+      let update = req.body;
+      if (typeof update === 'string') {
+        try {
+          update = JSON.parse(update);
+        } catch (e) {}
+      }
+      if (update && typeof update === 'object') {
+        await bot.handleUpdate(update);
       }
       if (!res.headersSent) {
         return res.status(200).json({ ok: true });
