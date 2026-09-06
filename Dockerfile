@@ -1,8 +1,8 @@
 # Step 1: Build stage
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
-# Install OpenSSL for Prisma engine compatibility in Alpine
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma engine compatibility
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 
@@ -17,10 +17,10 @@ RUN npx prisma generate
 RUN npm run build
 
 # Step 2: Production stage
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
-# Install OpenSSL for Prisma engine compatibility in Alpine
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma engine compatibility
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 
