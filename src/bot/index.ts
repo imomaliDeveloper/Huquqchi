@@ -99,7 +99,12 @@ bot.use(sessionMiddleware);
 bot.use(authMiddleware);
 bot.use(subCheckMiddleware);
 
+let handlersInitialized = false;
+
 export function setupBotHandlers() {
+  if (handlersInitialized) return;
+  handlersInitialized = true;
+
   // Command handlers
   bot.command('start', handleStartCommand);
   bot.command('admin', handleAdminCommand);
@@ -226,5 +231,7 @@ export function setupBotHandlers() {
   // Main menu navigation router
   bot.use(handleMainMenuRouting);
 }
+
+setupBotHandlers();
 
 export default bot;

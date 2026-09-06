@@ -1,14 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bot, { setupBotHandlers } from '../src/bot';
-
-let isSetup = false;
+import bot from '../src/bot';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    if (!isSetup) {
-      setupBotHandlers();
-      isSetup = true;
-    }
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const host = req.headers['x-forwarded-host'] || req.headers.host || 'huquqchi-lovat.vercel.app';
     const webhookUrl = `${protocol}://${host}/api/webhook`;
