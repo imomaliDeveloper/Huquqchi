@@ -1,7 +1,7 @@
 import { Markup } from 'telegraf';
 
 export function getMainMenuKeyboard() {
-  const miniAppUrl = process.env.MINI_APP_URL || 'https://huquqchi.vercel.app';
+  const miniAppUrl = process.env.MINI_APP_URL || 'https://huquqchi-lovat.vercel.app';
   return Markup.keyboard([
     [Markup.button.webApp('🚀 Huquqchi Mini App (Web UI)', miniAppUrl)],
     ['⚖️ Huquqiy AI', '🛡 AI Shartnoma Ekspertizasi'],

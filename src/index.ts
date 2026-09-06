@@ -42,7 +42,7 @@ async function bootstrap() {
     ]).catch(() => {});
 
     // Set Telegram Chat Menu Button to live Cloudflare Mini App URL
-    const miniAppUrl = process.env.MINI_APP_URL || 'https://huquqchi.vercel.app';
+    const miniAppUrl = process.env.MINI_APP_URL || 'https://huquqchi-lovat.vercel.app';
     await bot.telegram.setChatMenuButton({
       menuButton: {
         type: 'web_app',
