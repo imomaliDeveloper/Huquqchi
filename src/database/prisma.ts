@@ -1,5 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 
+// Ensure DATABASE_URL is set in environment to avoid PrismaClientInitializationError
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./dev.db';
+}
+
 // Polyfill BigInt.prototype.toJSON for safety during logging and JSON serialization
 (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
   return this.toString();
@@ -12,6 +17,11 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 

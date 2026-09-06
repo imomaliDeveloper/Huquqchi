@@ -25,6 +25,7 @@ RUN apt-get update -y && apt-get install -y openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV DATABASE_URL="file:./dev.db"
 
 COPY package*.json ./
 RUN npm ci --only=production
