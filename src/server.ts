@@ -21,7 +21,12 @@ export function createExpressServer(): Express {
   });
 
   // Serve static files from 'public' directory for Telegram Mini App frontend with anti-caching headers
-  const publicPath = path.join(__dirname, '..', 'public');
+  const publicPath = path.resolve(process.cwd(), 'public');
+  
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok', service: 'HuquqchiBot Backend', timestamp: new Date().toISOString() });
+  });
+
   app.use(express.static(publicPath, {
     setHeaders: (res) => {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
