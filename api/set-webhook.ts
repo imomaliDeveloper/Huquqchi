@@ -1,12 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bot, { setupBotHandlers } from '../src/bot';
 
-setupBotHandlers();
+let isSetup = false;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    if (!isSetup) {
+      setupBotHandlers();
+      isSetup = true;
+    }
     const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'huquqchi-lovat.vercel.app';
     const webhookUrl = `${protocol}://${host}/api/webhook`;
     await bot.telegram.setWebhook(webhookUrl);
     return res.status(200).json({ ok: true, message: 'Telegram Webhook muvaffaqiyatli o‘rnatildi!', webhookUrl });
