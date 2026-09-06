@@ -37,6 +37,7 @@ export function createExpressServer(): Express {
 
   // Mount API routes
   app.use('/api', apiRoutes);
+  app.use('/', apiRoutes);
 
   // Fallback for SPA routing with anti-caching
   app.use((req, res) => {
