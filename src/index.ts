@@ -42,7 +42,7 @@ async function bootstrap() {
     ]).catch(() => {});
 
     // Set Telegram Chat Menu Button to live Cloudflare Mini App URL
-    const miniAppUrl = process.env.MINI_APP_URL || 'https://share-removal-cake-photos.trycloudflare.com';
+    const miniAppUrl = process.env.MINI_APP_URL || 'https://immunology-laboratory-bristol-focal.trycloudflare.com';
     await bot.telegram.setChatMenuButton({
       menuButton: {
         type: 'web_app',

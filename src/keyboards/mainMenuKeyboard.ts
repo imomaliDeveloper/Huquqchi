@@ -1,7 +1,7 @@
 import { Markup } from 'telegraf';
 
 export function getMainMenuKeyboard() {
-  const miniAppUrl = process.env.MINI_APP_URL || 'https://share-removal-cake-photos.trycloudflare.com';
+  const miniAppUrl = process.env.MINI_APP_URL || 'https://immunology-laboratory-bristol-focal.trycloudflare.com';
   return Markup.keyboard([
     [Markup.button.webApp('🚀 Huquqchi Mini App (Web UI)', miniAppUrl)],
     ['⚖️ Huquqiy AI', '🛡 AI Shartnoma Ekspertizasi'],
