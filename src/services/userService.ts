@@ -52,6 +52,36 @@ export class UserService {
     });
   }
 
+  static async upsertUser(data: {
+    telegramId: number | bigint;
+    username?: string;
+    firstName: string;
+    lastName?: string;
+    phone?: string;
+    role?: string;
+  }): Promise<User> {
+    const bId = BigInt(data.telegramId);
+    return await prisma.user.upsert({
+      where: { telegramId: bId },
+      update: {
+        firstName: data.firstName,
+        lastName: data.lastName || null,
+        username: data.username || null,
+        phone: data.phone || null,
+        role: data.role || null,
+      },
+      create: {
+        telegramId: bId,
+        username: data.username || null,
+        firstName: data.firstName,
+        lastName: data.lastName || null,
+        phone: data.phone || null,
+        role: data.role || null,
+      },
+    });
+  }
+
+
   static async getUserStats(userId: number) {
     const totalQuizResults = await prisma.quizResult.count({
       where: { userId },

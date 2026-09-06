@@ -180,61 +180,55 @@ export async function handleRegistrationSteps(ctx: MyContext, next: () => Promis
     const telegramId = ctx.from!.id;
     const username = ctx.from!.username;
     const lastName = sessionLastName || ctx.from!.last_name;
+    const safeFirstName = firstName || ctx.from!.first_name || 'Foydalanuvchi';
 
     try {
-      // Save or update user in DB
-      let user = await UserService.findByTelegramId(telegramId);
-      if (user) {
-        user = await UserService.updateUser(telegramId, {
-          firstName: firstName || user.firstName,
-          lastName: lastName || user.lastName || undefined,
-          username: username || user.username || undefined,
-          phone: phone || user.phone || undefined,
-          role: selectedRole,
-        });
-      } else {
-        user = await UserService.createUser({
-          telegramId,
-          username,
-          firstName: firstName || ctx.from!.first_name || 'Foydalanuvchi',
-          lastName,
-          phone,
-          role: selectedRole,
-        });
-      }
+      // Save or update user in DB atomically using upsertUser
+      const user = await UserService.upsertUser({
+        telegramId,
+        username,
+        firstName: safeFirstName,
+        lastName,
+        phone,
+        role: selectedRole,
+      });
 
       // Process referral payload if new user registered via referral link
       if (refPayload) {
-        const refResult = await processReferralLink(telegramId, refPayload);
-        if (refResult && refResult.referrer) {
-          const { referrer, newCount } = refResult;
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { referredById: referrer.id },
-          });
+        try {
+          const refResult = await processReferralLink(telegramId, refPayload);
+          if (refResult && refResult.referrer) {
+            const { referrer, newCount } = refResult;
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { referredById: referrer.id },
+            });
 
-          // Notify referrer
-          try {
-            let alertMsg = `🎉 <b>YANGI REFERAL QO‘SHILDI!</b>\n\nDo‘stingiz <b>${escapeHTML(user.firstName)}</b> sizning taklif havolangiz orqali ro‘yxatdan o‘tdi.\n`;
-            alertMsg += `📊 Siz taklif qilgan do‘stlar soni: <b>${newCount} ta</b>\n`;
+            // Notify referrer
+            try {
+              let alertMsg = `🎉 <b>YANGI REFERAL QO‘SHILDI!</b>\n\nDo‘stingiz <b>${escapeHTML(user.firstName)}</b> sizning taklif havolangiz orqali ro‘yxatdan o‘tdi.\n`;
+              alertMsg += `📊 Siz taklif qilgan do‘stlar soni: <b>${newCount} ta</b>\n`;
 
-            if (newCount % 10 === 0) {
-              alertMsg += `\n🎁 <b>TABRIKLAYMIZ! 10 ta do‘st taklif qilganingiz uchun sizga 1 OYLIK BEPUL VIP PRO berildi!</b> 🚀`;
-            } else {
-              alertMsg += `🎯 Keyingi 1 oylik bepul VIP PRO uchun yana <b>${10 - (newCount % 10)} ta</b> do‘st taklif qiling!`;
+              if (newCount % 10 === 0) {
+                alertMsg += `\n🎁 <b>TABRIKLAYMIZ! 10 ta do‘st taklif qilganingiz uchun sizga 1 OYLIK BEPUL VIP PRO berildi!</b> 🚀`;
+              } else {
+                alertMsg += `🎯 Keyingi 1 oylik bepul VIP PRO uchun yana <b>${10 - (newCount % 10)} ta</b> do‘st taklif qiling!`;
+              }
+
+              await ctx.telegram.sendMessage(Number(referrer.telegramId), alertMsg, { parse_mode: 'HTML' });
+            } catch {
+              // Referrer offline or blocked bot
             }
-
-            await ctx.telegram.sendMessage(Number(referrer.telegramId), alertMsg, { parse_mode: 'HTML' });
-          } catch {
-            // Referrer offline or blocked bot
           }
+        } catch (refError) {
+          console.error('Error handling referral logic during registration:', refError);
         }
       }
 
       ctx.user = user;
       ctx.session.registration = undefined; // Reset registration session
 
-      const roleInfo = USER_ROLE_LABELS[selectedRole];
+      const roleInfo = USER_ROLE_LABELS[selectedRole] || { label: selectedRole, icon: '👤' };
 
       return ctx.reply(
         `🎉 <b>Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz.</b>\n\n` +
@@ -245,7 +239,7 @@ export async function handleRegistrationSteps(ctx: MyContext, next: () => Promis
         { parse_mode: 'HTML', ...getMainMenuKeyboard() }
       );
     } catch (error) {
-      console.error('Error completing registration:', error);
+      console.error(`Error completing registration for telegramId ${telegramId}:`, error);
       return ctx.reply('⚠️ Ro‘yxatdan o‘tishda xatolik yuz berdi. Iltimos, qayta /start buyrug‘ini yuboring.');
     }
   }
