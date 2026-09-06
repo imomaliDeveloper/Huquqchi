@@ -87,11 +87,8 @@ import {
   handleAdminConstitutionAudioClear,
 } from '../handlers/constitutionHandler';
 
-if (!config.botToken || config.botToken === 'YOUR_TELEGRAM_BOT_TOKEN') {
-  console.warn('⚠️ BOT_TOKEN is not set or using placeholder value in environment.');
-}
-
-export const bot = new Telegraf<MyContext>(config.botToken || 'DUMMY_TOKEN_FOR_DEV');
+const botToken = (process.env.BOT_TOKEN || config.botToken || '8708913937:AAFxVGita3lGuBLm1xgIWGdzhXh-SrEko7c').replace(/['"]/g, '').trim();
+export const bot = new Telegraf<MyContext>(botToken);
 
 // Register core middlewares
 bot.use(errorHandler);
