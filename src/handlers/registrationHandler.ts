@@ -109,6 +109,109 @@ export async function handleStartCommand(ctx: MyContext) {
 }
 
 export async function handleRegistrationSteps(ctx: MyContext, next: () => Promise<void>) {
+  const text = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : '';
+  const selectedRole = parseRoleFromInput(text);
+
+  // If user selected a role button and is registering or missing a role, complete registration atomically
+  if (selectedRole && (!ctx.user || !ctx.user.role || ctx.session?.registration?.step === 'AWAITING_ROLE')) {
+    const reg = ctx.session?.registration || {};
+    const telegramId = ctx.from!.id;
+    const username = ctx.from!.username;
+    const firstName = reg.firstName || ctx.from!.first_name || 'Foydalanuvchi';
+    const lastName = reg.lastName || ctx.from!.last_name || null;
+    const phone = reg.phone || null;
+    const refPayload = reg.refPayload || '';
+
+    try {
+      // Save or update user in DB atomically using upsertUser
+      const user = await UserService.upsertUser({
+        telegramId,
+        username,
+        firstName,
+        lastName: lastName || undefined,
+        phone: phone || undefined,
+        role: selectedRole,
+      });
+
+      // Process referral payload if new user registered via referral link
+      if (refPayload) {
+        try {
+          const refResult = await processReferralLink(telegramId, refPayload);
+          if (refResult && refResult.referrer) {
+            const { referrer, newCount } = refResult;
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { referredById: referrer.id },
+            }).catch(() => {});
+
+            try {
+              let alertMsg = `🎉 <b>YANGI REFERAL QO‘SHILDI!</b>\n\nDo‘stingiz <b>${escapeHTML(user.firstName)}</b> sizning taklif havolangiz orqali ro‘yxatdan o‘tdi.\n`;
+              alertMsg += `📊 Siz taklif qilgan do‘stlar soni: <b>${newCount} ta</b>\n`;
+
+              if (newCount % 10 === 0) {
+                alertMsg += `\n🎁 <b>TABRIKLAYMIZ! 10 ta do‘st taklif qilganingiz uchun sizga 1 OYLIK BEPUL VIP PRO berildi!</b> 🚀`;
+              } else {
+                alertMsg += `🎯 Keyingi 1 oylik bepul VIP PRO uchun yana <b>${10 - (newCount % 10)} ta</b> do‘st taklif qiling!`;
+              }
+
+              await ctx.telegram.sendMessage(Number(referrer.telegramId), alertMsg, { parse_mode: 'HTML' }).catch(() => {});
+            } catch {}
+          }
+        } catch (refError) {
+          console.error('Error handling referral logic during registration:', refError);
+        }
+      }
+
+      ctx.user = user;
+      if (ctx.session) {
+        ctx.session.registration = undefined;
+      }
+
+      const roleInfo = USER_ROLE_LABELS[selectedRole] || { label: selectedRole, icon: '👤' };
+
+      return ctx.reply(
+        `🎉 <b>Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz.</b>\n\n` +
+        `👤 <b>Ism:</b> ${escapeHTML(user.firstName)}\n` +
+        `📱 <b>Tel:</b> ${escapeHTML(user.phone || 'Kiritilmagan')}\n` +
+        `💼 <b>Maqom:</b> ${roleInfo.icon} ${roleInfo.label}\n\n` +
+        `Asosiy menyudan kerakli bo‘limni tanlang:`,
+        { parse_mode: 'HTML', ...getMainMenuKeyboard() }
+      );
+    } catch (error) {
+      console.error(`Error completing registration for telegramId ${telegramId}:`, error);
+      ctx.user = {
+        id: Math.abs(Number(telegramId) % 2147483647) || 1,
+        telegramId: BigInt(telegramId),
+        username: username || null,
+        firstName,
+        lastName,
+        phone,
+        role: selectedRole,
+        isPro: false,
+        referredById: null,
+        referralCount: 0,
+        voiceCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any;
+
+      if (ctx.session) {
+        ctx.session.registration = undefined;
+      }
+
+      const roleInfo = USER_ROLE_LABELS[selectedRole] || { label: selectedRole, icon: '👤' };
+
+      return ctx.reply(
+        `🎉 <b>Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz.</b>\n\n` +
+        `👤 <b>Ism:</b> ${escapeHTML(firstName)}\n` +
+        `📱 <b>Tel:</b> ${escapeHTML(phone || 'Kiritilmagan')}\n` +
+        `💼 <b>Maqom:</b> ${roleInfo.icon} ${roleInfo.label}\n\n` +
+        `Asosiy menyudan kerakli bo‘limni tanlang:`,
+        { parse_mode: 'HTML', ...getMainMenuKeyboard() }
+      );
+    }
+  }
+
   if (!ctx.session?.registration?.step) {
     return next();
   }
@@ -117,8 +220,6 @@ export async function handleRegistrationSteps(ctx: MyContext, next: () => Promis
 
   // STEP 1: Name & Surname input with strict validation and auto-capitalization
   if (step === 'AWAITING_NAME') {
-    const text = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : '';
-
     const validation = validateAndFormatName(text);
     if (!validation.isValid) {
       return ctx.reply(validation.errorMessage!, { parse_mode: 'HTML' });
@@ -162,112 +263,6 @@ export async function handleRegistrationSteps(ctx: MyContext, next: () => Promis
       `Ajoyib! Endi o‘zingizga mos <b>foydalanuvchi turini</b> tanlang:`,
       { parse_mode: 'HTML', ...getRoleSelectKeyboard() }
     );
-  }
-
-  // STEP 3: Role selection
-  if (step === 'AWAITING_ROLE') {
-    const text = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : '';
-    const selectedRole = parseRoleFromInput(text);
-
-    if (!selectedRole) {
-      return ctx.reply(
-        '⚠️ Iltimos, quyidagi ro‘yxatdan mos keladigan foydalanuvchi turini tanlang:',
-        getRoleSelectKeyboard()
-      );
-    }
-
-    const { firstName, lastName: sessionLastName, phone, refPayload } = ctx.session.registration;
-    const telegramId = ctx.from!.id;
-    const username = ctx.from!.username;
-    const lastName = sessionLastName || ctx.from!.last_name;
-    const safeFirstName = firstName || ctx.from!.first_name || 'Foydalanuvchi';
-
-    try {
-      // Save or update user in DB atomically using upsertUser
-      const user = await UserService.upsertUser({
-        telegramId,
-        username,
-        firstName: safeFirstName,
-        lastName,
-        phone,
-        role: selectedRole,
-      });
-
-      // Process referral payload if new user registered via referral link
-      if (refPayload) {
-        try {
-          const refResult = await processReferralLink(telegramId, refPayload);
-          if (refResult && refResult.referrer) {
-            const { referrer, newCount } = refResult;
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { referredById: referrer.id },
-            });
-
-            // Notify referrer
-            try {
-              let alertMsg = `🎉 <b>YANGI REFERAL QO‘SHILDI!</b>\n\nDo‘stingiz <b>${escapeHTML(user.firstName)}</b> sizning taklif havolangiz orqali ro‘yxatdan o‘tdi.\n`;
-              alertMsg += `📊 Siz taklif qilgan do‘stlar soni: <b>${newCount} ta</b>\n`;
-
-              if (newCount % 10 === 0) {
-                alertMsg += `\n🎁 <b>TABRIKLAYMIZ! 10 ta do‘st taklif qilganingiz uchun sizga 1 OYLIK BEPUL VIP PRO berildi!</b> 🚀`;
-              } else {
-                alertMsg += `🎯 Keyingi 1 oylik bepul VIP PRO uchun yana <b>${10 - (newCount % 10)} ta</b> do‘st taklif qiling!`;
-              }
-
-              await ctx.telegram.sendMessage(Number(referrer.telegramId), alertMsg, { parse_mode: 'HTML' });
-            } catch {
-              // Referrer offline or blocked bot
-            }
-          }
-        } catch (refError) {
-          console.error('Error handling referral logic during registration:', refError);
-        }
-      }
-
-      ctx.user = user;
-      ctx.session.registration = undefined; // Reset registration session
-
-      const roleInfo = USER_ROLE_LABELS[selectedRole] || { label: selectedRole, icon: '👤' };
-
-      return ctx.reply(
-        `🎉 <b>Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz.</b>\n\n` +
-        `👤 <b>Ism:</b> ${escapeHTML(user.firstName)}\n` +
-        `📱 <b>Tel:</b> ${escapeHTML(user.phone || 'Kiritilmagan')}\n` +
-        `💼 <b>Maqom:</b> ${roleInfo.icon} ${roleInfo.label}\n\n` +
-        `Asosiy menyudan kerakli bo‘limni tanlang:`,
-        { parse_mode: 'HTML', ...getMainMenuKeyboard() }
-      );
-    } catch (error) {
-      console.error(`Error completing registration for telegramId ${telegramId}:`, error);
-      ctx.user = {
-        id: Math.abs(Number(telegramId) % 2147483647) || 1,
-        telegramId: BigInt(telegramId),
-        username: username || null,
-        firstName: safeFirstName,
-        lastName: lastName || null,
-        phone: phone || null,
-        role: selectedRole,
-        isPro: false,
-        referredById: null,
-        referralCount: 0,
-        voiceCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as any;
-      ctx.session.registration = undefined;
-
-      const roleInfo = USER_ROLE_LABELS[selectedRole] || { label: selectedRole, icon: '👤' };
-
-      return ctx.reply(
-        `🎉 <b>Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz.</b>\n\n` +
-        `👤 <b>Ism:</b> ${escapeHTML(safeFirstName)}\n` +
-        `📱 <b>Tel:</b> ${escapeHTML(phone || 'Kiritilmagan')}\n` +
-        `💼 <b>Maqom:</b> ${roleInfo.icon} ${roleInfo.label}\n\n` +
-        `Asosiy menyudan kerakli bo‘limni tanlang:`,
-        { parse_mode: 'HTML', ...getMainMenuKeyboard() }
-      );
-    }
   }
 
   return next();
