@@ -53,6 +53,8 @@ import {
   handleAdminSkipExplanation,
   handleAdminAddAnotherQuestion,
   handleAdminFinishQuiz,
+  handleAdminPollImport,
+  handleAdminSaveImportedPoll,
 } from '../handlers/adminQuizHandler';
 import {
   handleLegalServicesView,
@@ -161,6 +163,11 @@ export function setupBotHandlers() {
   bot.action('admin_skip_explanation', handleAdminSkipExplanation);
   bot.action('admin_add_another_question', handleAdminAddAnotherQuestion);
   bot.action('admin_finish_quiz', handleAdminFinishQuiz);
+  bot.action(/^save_poll_cat_(.+)$/, (ctx) => handleAdminSaveImportedPoll(ctx, ctx.match[1]!));
+
+  // Voice & Poll Import handlers
+  bot.on('voice', handleVoiceMessage);
+  bot.on('poll', handleAdminPollImport);
 
   // Legal Services actions
   bot.action('back_to_services', handleLegalServicesView);

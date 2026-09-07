@@ -348,3 +348,123 @@ export async function handleAdminFinishQuiz(ctx: MyContext) {
     { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
   ).catch(() => {});
 }
+
+export async function handleAdminPollImport(ctx: MyContext) {
+  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
+
+  const poll = ctx.message && 'poll' in ctx.message ? ctx.message.poll : null;
+  if (!poll) return;
+
+  const question = poll.question;
+  const options = poll.options.map((o: any) => o.text);
+
+  if (options.length < 2) {
+    return ctx.reply('⚠️ Test kamida 2 ta variantga ega bo‘lishi kerak.');
+  }
+
+  const optionA = options[0] || 'A';
+  const optionB = options[1] || 'B';
+  const optionC = options[2] || 'C';
+  const optionD = options[3] || 'D';
+
+  const correctIndex = poll.correct_option_id !== undefined ? poll.correct_option_id : 0;
+  const letterMap = ['A', 'B', 'C', 'D'];
+  const correctAnswer = letterMap[correctIndex] || 'A';
+  const explanation = poll.explanation || null;
+
+  // Store draft in session
+  ctx.session = ctx.session || {};
+  (ctx.session as any).pendingImportPoll = {
+    question,
+    optionA,
+    optionB,
+    optionC,
+    optionD,
+    correctAnswer,
+    explanation,
+  };
+
+  const categoryButtons = [
+    [
+      Markup.button.callback('📘 8-sinf Huquq', 'save_poll_cat_8-sinf Huquq'),
+      Markup.button.callback('📗 9-sinf Huquq', 'save_poll_cat_9-sinf Huquq'),
+    ],
+    [
+      Markup.button.callback('📙 10-sinf Huquq', 'save_poll_cat_10-sinf Huquq'),
+      Markup.button.callback('📕 11-sinf Huquq', 'save_poll_cat_11-sinf Huquq'),
+    ],
+    [
+      Markup.button.callback('🎯 DTM Imtihon Testlari', 'save_poll_cat_DTM Imtihon Testlari'),
+      Markup.button.callback('📜 Milliy Sertifikat', 'save_poll_cat_Milliy Sertifikat Testlari'),
+    ],
+  ];
+
+  return ctx.reply(
+    `📩 <b>TELEGRAM QUIZBOT / POLL TEST USHLANDI!</b>\n\n` +
+    `❓ <b>Savol:</b> ${escapeHTML(question)}\n` +
+    `🅰️ ${escapeHTML(optionA)}\n` +
+    `🅱️ ${escapeHTML(optionB)}\n` +
+    `🅲️ ${escapeHTML(optionC)}\n` +
+    `🅳️ ${escapeHTML(optionD)}\n\n` +
+    `🎯 <b>To‘g‘ri javob:</b> ${correctAnswer}\n\n` +
+    `Ushbu savolni qaysi <b>Darslik / Kategoriya</b> bo‘limiga saqlaymiz?`,
+    { parse_mode: 'HTML', ...Markup.inlineKeyboard(categoryButtons) }
+  );
+}
+
+export async function handleAdminSaveImportedPoll(ctx: MyContext, categoryName: string) {
+  await ctx.answerCbQuery().catch(() => {});
+  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
+
+  const pending = (ctx.session as any)?.pendingImportPoll;
+  if (!pending) {
+    return ctx.reply('⚠️ Saqlash uchun test ma’lumotlari topilmadi. Qayta uzating.');
+  }
+
+  try {
+    const quizTitle = `${categoryName} Darslik Testlari`;
+
+    let quiz = await prisma.quiz.findFirst({
+      where: { title: quizTitle },
+    });
+
+    if (!quiz) {
+      quiz = await prisma.quiz.create({
+        data: {
+          title: quizTitle,
+          category: categoryName,
+          description: `Admin tomonidan yuklangan ${categoryName} bo'yicha test to'plami.`,
+        },
+      });
+    }
+
+    await prisma.quizQuestion.create({
+      data: {
+        quizId: quiz.id,
+        question: pending.question,
+        optionA: pending.optionA,
+        optionB: pending.optionB,
+        optionC: pending.optionC,
+        optionD: pending.optionD,
+        correctAnswer: pending.correctAnswer,
+        explanation: pending.explanation || null,
+      },
+    });
+
+    // Clear session draft
+    delete (ctx.session as any).pendingImportPoll;
+
+    return ctx.editMessageText(
+      `✅ <b>SAVOL BAZAGA MUVAFFAQIYATLI SAQLANDI!</b>\n\n` +
+      `📌 <b>Kategoriya:</b> ${escapeHTML(categoryName)}\n` +
+      `❓ <b>Savol:</b> ${escapeHTML(pending.question)}\n` +
+      `🎯 <b>To‘g‘ri javob:</b> ${pending.correctAnswer}\n\n` +
+      `💡 <i>Yana boshqa @QuizBot testlarini bemalol ushbu chatga uzatishingiz (Forward) mumkin!</i>`,
+      { parse_mode: 'HTML' }
+    ).catch(() => {});
+  } catch (error) {
+    console.error('Error saving imported poll:', error);
+    return ctx.reply('⚠️ Savolni saqlashda xatolik yuz berdi.');
+  }
+}
+
