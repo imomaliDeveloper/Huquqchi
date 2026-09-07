@@ -1383,7 +1383,7 @@ function escapeHtml(str) {
 }
 
 // DTM & Milliy Sertifikat Live Countdown Timer
-let examTargetTimestamp = new Date('2026-07-15T08:00:00').getTime();
+let examTargetTimestamp = new Date('2026-12-23T09:00:00').getTime();
 
 function startExamCountdown() {
   // Fetch dynamically scraped official target date from backend API

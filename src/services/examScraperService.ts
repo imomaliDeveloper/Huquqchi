@@ -10,13 +10,13 @@ export interface ExamConfig {
 
 export class ExamScraperService {
   private static config: ExamConfig = {
-    targetDate: '2026-07-15T08:00:00.000Z',
-    certTargetDate: '2026-11-01T09:00:00.000Z',
-    title: '⏳ DTM va Milliy Sertifikat Imtihonlariga',
-    season: '2026 MAVSUM',
-    source: '@uzbmb_rasmiy (Bilim va Malakalarni Baholash Agentligi)',
+    targetDate: '2026-12-23T04:00:00.000Z', // 23-Dekabr 09:00 AM Tashkent
+    certTargetDate: '2026-12-23T04:00:00.000Z',
+    title: '⏳ Huquqshunoslik Milliy Sertifikat Imtihoniga',
+    season: '23 DEKABR',
+    source: 'my.uzbmb.uz (Bilim va Malakalarni Baholash Agentligi Rasmiy)',
     lastChecked: new Date().toISOString(),
-    scrapedNotice: 'O‘zR Bilim va malakalarni baholash agentligi (sobiq DTM) rasmiy jadvali bo‘yicha'
+    scrapedNotice: 'Huquqshunoslik Elektron Milliy Sertifikat Imtihoni: 23-Dekabr (my.uzbmb.uz rasmiy jadvali bo‘yicha)'
   };
 
   /**
@@ -75,8 +75,8 @@ export class ExamScraperService {
         const lowerText = rawText.toLowerCase();
 
         if (
-          (lowerText.includes('imtihon') || lowerText.includes('sertifikat') || lowerText.includes('kirish')) &&
-          (lowerText.includes('boshlanadi') || lowerText.includes('bo\'lib o\'tadi') || lowerText.includes('sanada') || lowerText.includes('kunlari'))
+          (lowerText.includes('imtihon') || lowerText.includes('sertifikat') || lowerText.includes('kirish') || lowerText.includes('huquqshunoslik')) &&
+          (lowerText.includes('boshlanadi') || lowerText.includes('bo\'lib o\'tadi') || lowerText.includes('sanada') || lowerText.includes('kunlari') || lowerText.includes('dekabr'))
         ) {
           foundNotices.push(rawText);
         }
@@ -86,26 +86,31 @@ export class ExamScraperService {
       if (latestNotice) {
         logMessage += `Found ${foundNotices.length} matching announcements! Latest: "${latestNotice.slice(0, 100)}..."\n`;
 
-        // Date extraction pattern: e.g. "15-iyul", "10-avgust", "1-noyabr"
-        const dateMatch = latestNotice.match(/(\d{1,2})\s*[-–]?\s*(iyul|avgust|noyabr|aprel|may|iyun|mart)\b/i);
+        // Date extraction pattern: e.g. "23-dekabr", "15-iyul", "10-avgust", "1-noyabr"
+        const dateMatch = latestNotice.match(/(\d{1,2})\s*[-–]?\s*(yanvar|fevral|mart|aprel|may|iyun|iyul|avgust|sentabr|oktabr|noyabr|dekabr)\b/i);
 
         if (dateMatch && dateMatch[1] && dateMatch[2]) {
           const day = parseInt(dateMatch[1], 10);
           const monthName = dateMatch[2].toLowerCase();
 
           const monthMap: Record<string, number> = {
+            yanvar: 0,
+            fevral: 1,
             mart: 2,
             aprel: 3,
             may: 4,
             iyun: 5,
             iyul: 6,
             avgust: 7,
-            noyabr: 10
+            sentabr: 8,
+            oktabr: 9,
+            noyabr: 10,
+            dekabr: 11
           };
 
-          const monthIndex = monthMap[monthName] ?? 6; // Default to July if not mapped
+          const monthIndex = monthMap[monthName] ?? 11; // Default to December if not mapped
           const targetYear = new Date().getFullYear();
-          const target = new Date(Date.UTC(targetYear, monthIndex, day, 3, 0, 0)); // 08:00 AM Tashkent (UTC+5)
+          const target = new Date(Date.UTC(targetYear, monthIndex, day, 4, 0, 0)); // 09:00 AM Tashkent (UTC+4/5)
 
           if (!isNaN(target.getTime())) {
             this.config.targetDate = target.toISOString();
