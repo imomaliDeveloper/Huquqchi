@@ -8,7 +8,15 @@ export const authMiddleware: MiddlewareFn<MyContext> = async (ctx, next) => {
   }
 
   try {
-    const user = await UserService.findByTelegramId(ctx.from.id);
+    let user = await UserService.findByTelegramId(ctx.from.id);
+    if (!user) {
+      user = await UserService.upsertUser({
+        telegramId: ctx.from.id,
+        username: ctx.from.username,
+        firstName: ctx.from.first_name || 'Foydalanuvchi',
+        lastName: ctx.from.last_name || undefined,
+      });
+    }
     ctx.user = user;
   } catch (error) {
     console.error('Error in authMiddleware:', error);
