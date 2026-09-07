@@ -180,6 +180,34 @@
         </div>
       </div>
 
+      <!-- DTM & MILLIY SERTIFIKAT EXAM COUNTDOWN WIDGET -->
+      <div class="glass-card-glow rounded-2xl p-4 border border-purple-500/40 shadow-xl space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-white flex items-center gap-1.5">
+            <span>⏳ DTM va Milliy Sertifikat Imtihonlariga</span>
+          </span>
+          <span class="text-[9px] bg-purple-500/30 text-purple-200 font-mono font-bold px-2 py-0.5 rounded-full border border-purple-500/30">2026 MAVSUM</span>
+        </div>
+        <div class="grid grid-cols-4 gap-2 text-center font-mono">
+          <div class="bg-slate-900/90 border border-slate-800 p-2 rounded-xl">
+            <div id="countdownDays" class="text-base font-extrabold text-purple-400">--</div>
+            <div class="text-[9px] text-slate-400 font-sans">Kun</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 p-2 rounded-xl">
+            <div id="countdownHours" class="text-base font-extrabold text-blue-400">--</div>
+            <div class="text-[9px] text-slate-400 font-sans">Soat</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 p-2 rounded-xl">
+            <div id="countdownMins" class="text-base font-extrabold text-emerald-400">--</div>
+            <div class="text-[9px] text-slate-400 font-sans">Daqiqa</div>
+          </div>
+          <div class="bg-slate-900/90 border border-slate-800 p-2 rounded-xl">
+            <div id="countdownSecs" class="text-base font-extrabold text-amber-400 animate-pulse">--</div>
+            <div class="text-[9px] text-slate-400 font-sans">Soniya</div>
+          </div>
+        </div>
+      </div>
+
       <!-- CORE SERVICES GRID -->
       <div>
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -224,7 +252,22 @@
             <p class="text-[11px] text-slate-400">AI Xatarlarni & Jarimalarni aniqlash</p>
           </div>
 
-          <!-- 5. QONUNLAR & LEX.UZ -->
+          <!-- 5. YURIDIK ATAMALAR FLASHCARDS -->
+          <div onclick="openFlashcardsModal()" class="glass-card p-4 rounded-xl border border-purple-500/40 bg-purple-500/5 hover:border-purple-500 transition-all cursor-pointer group active:scale-95 col-span-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-clone"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                  Yuridik Atamalar Flashcards <span class="text-[9px] bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded font-mono">Lug'at</span>
+                </h4>
+                <p class="text-[11px] text-slate-300">DTM va Sertifikat uchun eng ko'p tushadigan yuridik atamalarni tez yodlash</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. QONUNLAR & LEX.UZ -->
           <div onclick="switchTab('const')" class="glass-card p-4 rounded-xl border border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500 transition-all cursor-pointer group active:scale-95 col-span-2">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
@@ -729,6 +772,67 @@
     </div>
   </div>
 
+  <!-- YURIDIK ATAMALAR FLASHCARDS MODAL -->
+  <div id="flashcardsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card-glow max-w-md w-full rounded-2xl p-5 border border-purple-500/40 relative space-y-4 shadow-2xl">
+      <button onclick="closeFlashcardsModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs hover:text-white">
+        ✕
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm">🃏</div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Yuridik Atamalar Flashcards</h3>
+            <p class="text-[10px] text-purple-300 font-mono">DTM & Sertifikat Lug'ati</p>
+          </div>
+        </div>
+        <span id="flashcardCounter" class="text-xs font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">
+          1 / 10
+        </span>
+      </div>
+
+      <!-- Interactive Flip Card Container -->
+      <div onclick="flipFlashcard()" class="cursor-pointer min-h-[170px] bg-slate-900/90 hover:bg-slate-800/90 border border-purple-500/40 rounded-2xl p-5 flex flex-col justify-between transition-all shadow-inner active:scale-98 relative">
+        <div class="text-[10px] text-purple-400 font-bold uppercase tracking-wider flex items-center justify-between">
+          <span id="fcCategory">FUQAROLIK HUQUQI</span>
+          <span class="text-slate-400 font-normal">🔄 Bosib o'giring</span>
+        </div>
+
+        <div id="fcCardFront" class="my-auto text-center space-y-1">
+          <h2 id="fcTermTitle" class="text-lg font-extrabold text-white">Emansipatsiya</h2>
+          <p class="text-[11px] text-slate-400">Tushuntirishini ko'rish uchun bosing 👆</p>
+        </div>
+
+        <div id="fcCardBack" class="hidden my-auto text-left space-y-2">
+          <p id="fcTermDef" class="text-xs text-slate-200 leading-relaxed font-medium">
+            16 yoshga to'lgan voyaga yetmagan shaxsning mehnat yoki tadbirkorlik faoliyati bilan shug'ullanishi munosabati bilan to'liq muomala layoqatli deb e'lon qilinishi.
+          </p>
+          <div id="fcTermArticle" class="text-[10px] bg-purple-500/20 text-purple-300 p-2 rounded-lg border border-purple-500/30 font-mono">
+            📜 Manba: O'zR FK 28-moddasi
+          </div>
+        </div>
+
+        <div class="text-[9px] text-slate-500 text-center font-mono pt-1 border-t border-slate-800/60">
+          💡 Kartochkaga bosing (Flip)
+        </div>
+      </div>
+
+      <!-- Nav Controls -->
+      <div class="flex items-center justify-between gap-3 pt-1">
+        <button onclick="prevFlashcard()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1 active:scale-95 border border-slate-700">
+          ◀️ Oldingisi
+        </button>
+        <button onclick="flipFlashcard()" class="py-2.5 px-4 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 font-bold rounded-xl text-xs flex items-center justify-center gap-1 active:scale-95">
+          🔄 O'girish
+        </button>
+        <button onclick="nextFlashcard()" class="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1 active:scale-95 shadow-lg shadow-purple-500/20">
+          Keyingisi ▶️
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAVIGATION BAR -->
   <nav class="fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-slate-800/80 px-1 py-2 shadow-2xl">
     <div class="max-w-md mx-auto flex items-center justify-around">
@@ -766,6 +870,6 @@
   </nav>
 
   <!-- Dynamic JS Script -->
-  <script src="/app.js?v=202609072"></script>
+  <script src="/app.js?v=202609073"></script>
 </body>
 </html>

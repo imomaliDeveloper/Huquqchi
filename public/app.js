@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupAiForm();
   setupRiskForm();
   setupDocForm();
+  startExamCountdown();
 });
 
 // Setup User Profile Info
@@ -1193,6 +1194,182 @@ function payViaTelegram() {
   tg.HapticFeedback?.notificationOccurred('success');
   alert("💳 To'lov amalga oshirish uchun Telegram Botga /start yuboring va 'VIP PRO Obuna' menyusini tanlang.");
   closeProModal();
+}
+
+// ----------------------------------------------------
+// 8. DTM & MILLIY SERTIFIKAT EXAM COUNTDOWN TIMER
+// ----------------------------------------------------
+function startExamCountdown() {
+  // Target Exam Date: July 1, 2026 09:00:00
+  const examDate = new Date('2026-07-01T09:00:00+05:00').getTime();
+
+  function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = examDate - now;
+
+    const daysEl = document.getElementById('countdownDays');
+    const hoursEl = document.getElementById('countdownHours');
+    const minsEl = document.getElementById('countdownMins');
+    const secsEl = document.getElementById('countdownSecs');
+
+    if (distance < 0) {
+      if (daysEl) daysEl.textContent = '00';
+      if (hoursEl) hoursEl.textContent = '00';
+      if (minsEl) minsEl.textContent = '00';
+      if (secsEl) secsEl.textContent = '00';
+      return;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+    if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+    if (minsEl) minsEl.textContent = String(minutes).padStart(2, '0');
+    if (secsEl) secsEl.textContent = String(seconds).padStart(2, '0');
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+}
+
+// ----------------------------------------------------
+// 9. YURIDIK ATAMALAR FLASHCARDS SYSTEM
+// ----------------------------------------------------
+const FLASHCARDS_DATA = [
+  {
+    term: "Emansipatsiya",
+    category: "FUQAROLIK HUQUQI",
+    definition: "16 yoshga to'lgan voyaga yetmagan shaxsning mehnat shartnomasi bo'yicha ishlayotgani yoki tadbirkorlik faoliyati bilan shug'ullanayotgani munosabati bilan to'liq muomala layoqatli deb e'lon qilinishi.",
+    article: "📜 Manba: O'zR Fuqarolik Kodeksi 28-moddasi"
+  },
+  {
+    term: "Legitimlik",
+    category: "KONSTITUTSIYAVIY HUQUQ",
+    definition: "Davlat hokimiyati, qonunlar va mansabdor shaxslar faoliyatining xalq va jamiyat tomonidan tan olinishi, qonuniy va adolatli deb e'tirof etilishi.",
+    article: "📜 Manba: Konstitutsiyaviy Huquq Atamalari"
+  },
+  {
+    term: "Presedent (Yuridik)",
+    category: "HUQUQ NAZARIYASI",
+    definition: "Sud yoki ma'muriy organning muayyan ish bo'yicha chiqargan va keyinchalik o'xshash barcha ishlar uchun majburiy qoida bo'lib xizmat qiladigan qarori.",
+    article: "📜 Manba: Umumiy Huquq Sistemasi"
+  },
+  {
+    term: "Suverenitet",
+    category: "KONSTITUTSIYAVIY HUQUQ",
+    definition: "Davlatning o'z hududida oliy hokimiyatga ega bo'lishi hamda tashqi munosabatlarda boshqa davlatlardan mustaqilligi.",
+    article: "📜 Manba: O'zR Konstitutsiyasi 1-moddasi"
+  },
+  {
+    term: "Apellyatsiya",
+    category: "PROTSESSUAL HUQUQ",
+    definition: "Sudning hali qonuniy kuchga kirmagan hal qiluv qarorlari va hukmlari ustidan yuqori sudga shikoyat qilish va qayta ko'rib chiqish tartibi.",
+    article: "📜 Manba: FPK & FPK Kodekslari"
+  },
+  {
+    term: "Kassatsiya",
+    category: "PROTSESSUAL HUQUQ",
+    definition: "Sudning qonuniy kuchga kirgan hal qiluv qarorlari yoki hukmlari ustidan qonuniylik va adolatlilik nuqtai nazaridan shikoyat berish tartibi.",
+    article: "📜 Manba: Sud Protsessi Qonunlari"
+  },
+  {
+    term: "Amnistiya",
+    category: "JINOYAT HUQUQI",
+    definition: "Oliy Majlis Senati tomonidan muayyan toifadagi shaxslarni jinoyat javobgarligidan yoki jazodan ozod qilish haqida qabul qilinadigan akt.",
+    article: "📜 Manba: O'zR Jinoyat Kodeksi 68-moddasi"
+  },
+  {
+    term: "Ratifikatsiya",
+    category: "XALQARO HUQUQ",
+    definition: "Xalqaro shartnoma va bitimlar davlatning Oliy vakillik organi (Parlament) tomonidan ma'qullanib, yuridik kuchga kiritilishi tartibi.",
+    article: "📜 Manba: Xalqaro Shartnomalar Qonuni"
+  },
+  {
+    term: "Referendum",
+    category: "KONSTITUTSIYAVIY HUQUQ",
+    definition: "Eng muhim davlat va jamiyat masalalari bo'yicha fuqarolarning umumxalq ovoz berishi (bevosita demokratiya shakli).",
+    article: "📜 Manba: Referendum to'g'risidagi Qonun"
+  },
+  {
+    term: "Muomala Layoqati",
+    category: "FUQAROLIK HUQUQI",
+    definition: "Shaxsning o'z harakatlari bilan fuqarolik huquqlariga ega bo'lish va o'zi uchun fuqarolik majburiyatlarini yaratish hamda ularni bajarish qobiliyati.",
+    article: "📜 Manba: O'zR FK 22-moddasi"
+  }
+];
+
+let currentFcIdx = 0;
+let isFcFlipped = false;
+
+function openFlashcardsModal() {
+  tg.HapticFeedback?.impactOccurred('medium');
+  const modal = document.getElementById('flashcardsModal');
+  if (modal) modal.classList.remove('hidden');
+
+  currentFcIdx = 0;
+  isFcFlipped = false;
+  renderFlashcard();
+}
+
+function closeFlashcardsModal() {
+  const modal = document.getElementById('flashcardsModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderFlashcard() {
+  const fcCategory = document.getElementById('fcCategory');
+  const fcTermTitle = document.getElementById('fcTermTitle');
+  const fcTermDef = document.getElementById('fcTermDef');
+  const fcTermArticle = document.getElementById('fcTermArticle');
+  const fcCounter = document.getElementById('flashcardCounter');
+  const front = document.getElementById('fcCardFront');
+  const back = document.getElementById('fcCardBack');
+
+  if (currentFcIdx < 0) currentFcIdx = FLASHCARDS_DATA.length - 1;
+  if (currentFcIdx >= FLASHCARDS_DATA.length) currentFcIdx = 0;
+
+  const item = FLASHCARDS_DATA[currentFcIdx];
+
+  if (fcCounter) fcCounter.textContent = `${currentFcIdx + 1} / ${FLASHCARDS_DATA.length}`;
+  if (fcCategory) fcCategory.textContent = item.category;
+  if (fcTermTitle) fcTermTitle.textContent = item.term;
+  if (fcTermDef) fcTermDef.textContent = item.definition;
+  if (fcTermArticle) fcTermArticle.textContent = item.article;
+
+  isFcFlipped = false;
+  if (front) front.classList.remove('hidden');
+  if (back) back.classList.add('hidden');
+}
+
+function flipFlashcard() {
+  tg.HapticFeedback?.impactOccurred('light');
+  isFcFlipped = !isFcFlipped;
+
+  const front = document.getElementById('fcCardFront');
+  const back = document.getElementById('fcCardBack');
+
+  if (isFcFlipped) {
+    if (front) front.classList.add('hidden');
+    if (back) back.classList.remove('hidden');
+  } else {
+    if (front) front.classList.remove('hidden');
+    if (back) back.classList.add('hidden');
+  }
+}
+
+function nextFlashcard() {
+  tg.HapticFeedback?.impactOccurred('medium');
+  currentFcIdx++;
+  renderFlashcard();
+}
+
+function prevFlashcard() {
+  tg.HapticFeedback?.impactOccurred('medium');
+  currentFcIdx--;
+  renderFlashcard();
 }
 
 // Helper: HTML Escaper
