@@ -3,6 +3,7 @@ import { Telegraf } from 'telegraf';
 import { MyContext } from '../bot/context';
 import { ChannelPostService } from './channelPostService';
 import { ExamScraperService } from './examScraperService';
+import { MotivationService } from './motivationService';
 
 export class CronService {
   private static isInitialized = false;
@@ -25,6 +26,16 @@ export class CronService {
         await ExamScraperService.scrapeOfficialExamDates();
       } catch (err) {
         console.error('Error in scheduled exam date scraper:', err);
+      }
+    });
+
+    // Cron expression: 30 8 * * * (Every morning at 08:30 AM) - Broadcast daily motivation to users
+    cron.schedule('30 8 * * *', async () => {
+      console.log('📣 Executing scheduled daily motivation broadcast to all users (08:30 AM)...');
+      try {
+        await MotivationService.broadcastDailyMotivation(bot);
+      } catch (err) {
+        console.error('Error in scheduled daily motivation broadcast:', err);
       }
     });
 

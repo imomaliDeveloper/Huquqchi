@@ -4,6 +4,7 @@ import { AiService } from '../services/aiService';
 import { DocGeneratorService } from '../services/docGeneratorService';
 import { TtsService } from '../services/ttsService';
 import { ExamScraperService } from '../services/examScraperService';
+import { MotivationService } from '../services/motivationService';
 import { FULL_CONSTITUTION_DATA } from '../data/constitutionData';
 
 import bot from '../bot';
@@ -653,6 +654,16 @@ router.post('/admin/scrape-exam-dates', async (req: Request, res: Response) => {
   try {
     const result = await ExamScraperService.scrapeOfficialExamDates();
     res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Trigger Daily Motivation Broadcast manually (Admin)
+router.post('/admin/trigger-motivation', async (req: Request, res: Response) => {
+  try {
+    const result = await MotivationService.broadcastDailyMotivation(bot);
+    res.json({ success: true, result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
