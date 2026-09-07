@@ -21,5 +21,18 @@ export class CronService {
         console.error('Error in scheduled daily channel auto-post:', err);
       }
     });
+
+    // Render Keep-Alive Self-Pinger (Every 10 minutes) to prevent free tier sleeping
+    const renderUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVER_URL || '';
+    if (renderUrl) {
+      console.log(`⏰ Initializing Render Keep-Alive Self-Pinger for: ${renderUrl}`);
+      cron.schedule('*/10 * * * *', async () => {
+        try {
+          const healthUrl = `${renderUrl.replace(/\/$/, '')}/api/health`;
+          await fetch(healthUrl).catch(() => {});
+          console.log(`💓 Render Keep-Alive self-ping sent to ${healthUrl}`);
+        } catch (e) {}
+      });
+    }
   }
 }
