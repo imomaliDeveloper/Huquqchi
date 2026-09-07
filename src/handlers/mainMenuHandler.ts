@@ -19,6 +19,11 @@ import { handleRiskCheckView, handleRiskCheckMessage } from './riskCheckHandler'
 import { handleConstitutionView, handleAdminConstitutionAudioStep, handleConstitutionArticleDetails } from './constitutionHandler';
 
 export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<void>) {
+  // Handle Admin Broadcast input if session active (checked BEFORE text check so media/forwards work)
+  if ((ctx.session as any)?.adminBroadcastActive && ctx.message) {
+    return handleAdminBroadcastExecute(ctx);
+  }
+
   // Check if AI Contract Risk Check step is active
   if ((ctx.session as any)?.riskCheckSession?.step === 'AWAITING_TEXT' && ctx.message && 'text' in ctx.message) {
     const text = ctx.message.text.trim();
@@ -67,11 +72,6 @@ export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<
   if ((ctx.session as any)?.docForm?.step) {
     const handled = await handleDocumentWizardSteps(ctx, text);
     if (handled) return;
-  }
-
-  // Handle Admin Broadcast input if session active
-  if ((ctx.session as any)?.adminBroadcastActive) {
-    return handleAdminBroadcastExecute(ctx, text);
   }
 
   switch (text) {

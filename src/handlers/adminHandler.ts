@@ -21,6 +21,13 @@ export interface AdminPdfUploadSession {
 export async function handleAdminCommand(ctx: MyContext) {
   if (!ctx.from) return;
 
+  if (ctx.session) {
+    delete (ctx.session as any).adminBroadcastActive;
+    delete (ctx.session as any).adminPdfUpload;
+    delete (ctx.session as any).adminConstitutionUpload;
+    delete (ctx.session as any).adminQuiz;
+  }
+
   const isAdmin = await AdminService.isAdmin(ctx.from.id);
   if (!isAdmin) {
     // If table is empty, promote the first user calling /admin to SuperAdmin for dev convenience
@@ -395,15 +402,27 @@ export async function handleAdminBroadcastPrompt(ctx: MyContext) {
 
   return ctx.editMessageText(
     `📢 ${UI.header('FOYDALANUVCHILARGA E\'LON YUBORISH', '📩')}\n\n` +
-    `Barcha ro‘yxatdan o‘tgan foydalanuvchilarga yubormoqchi bo‘lgan matn yoki e'loningizni yozib yuboring:`,
+    `Barcha ro‘yxatdan o‘tgan foydalanuvchilarga yubormoqchi bo‘lgan e'loningizni yuboring (Matn, Rasm, Video, Hujjat yoki Boshqa kanaldan Forward qilingan xabar):\n\n` +
+    `💡 <i>Yuborgan xabaringiz shakli va fayllari o‘z holicha barcha obunachilarga yetkaziladi.</i>`,
     { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
   ).catch(() => {});
 }
 
-export async function handleAdminBroadcastExecute(ctx: MyContext, text: string) {
+export async function handleAdminBroadcastExecute(ctx: MyContext) {
   if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
+  if (!ctx.chat || !ctx.message) return;
 
-  (ctx.session as any).adminBroadcastActive = false;
+  if (ctx.session) {
+    delete (ctx.session as any).adminBroadcastActive;
+  }
+
+  // Check if admin wants to cancel
+  if ('text' in ctx.message) {
+    const textMsg = ctx.message.text.trim();
+    if (textMsg === '❌ Bekor Qilish' || textMsg === '/cancel') {
+      return handleAdminCommand(ctx);
+    }
+  }
 
   const statusMsg = await ctx.reply("🚀 <i>E'lon barcha foydalanuvchilarga yuborilmoqda...</i>", { parse_mode: 'HTML' });
 
@@ -413,21 +432,25 @@ export async function handleAdminBroadcastExecute(ctx: MyContext, text: string) 
 
   for (const u of allUsers) {
     try {
-      await ctx.telegram.sendMessage(Number(u.telegramId), `📢 <b>ADMINISTRATSIYA E'LONI:</b>\n\n${escapeHTML(text)}`, {
-        parse_mode: 'HTML',
-      });
+      await ctx.telegram.copyMessage(u.telegramId.toString(), ctx.chat.id, ctx.message.message_id);
       successCount++;
     } catch (err) {
       failCount++;
     }
+
+    if (allUsers.length > 20) {
+      await new Promise((resolve) => setTimeout(resolve, 35));
+    }
   }
 
-  await ctx.telegram.deleteMessage(ctx.chat!.id, statusMsg.message_id).catch(() => {});
+  await ctx.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+
+  const buttons = [[Markup.button.callback('🔙 Admin Panelga Qaytish', 'admin_home')]];
 
   return ctx.reply(
     `✅ <b>E'lon tarqatish yakunlandi!</b>\n\n` +
     `📬 Muvaffaqiyatli yetkazildi: <b>${successCount} ta</b>\n` +
     `❌ Yetkazilmadi (bloklangan/o'chirilgan): <b>${failCount} ta</b>`,
-    { parse_mode: 'HTML' }
+    { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
   );
 }
