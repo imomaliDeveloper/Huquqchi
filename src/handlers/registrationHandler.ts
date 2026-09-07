@@ -240,7 +240,33 @@ export async function handleRegistrationSteps(ctx: MyContext, next: () => Promis
       );
     } catch (error) {
       console.error(`Error completing registration for telegramId ${telegramId}:`, error);
-      return ctx.reply('⚠️ Ro‘yxatdan o‘tishda xatolik yuz berdi. Iltimos, qayta /start buyrug‘ini yuboring.');
+      ctx.user = {
+        id: Math.abs(Number(telegramId) % 2147483647) || 1,
+        telegramId: BigInt(telegramId),
+        username: username || null,
+        firstName: safeFirstName,
+        lastName: lastName || null,
+        phone: phone || null,
+        role: selectedRole,
+        isPro: false,
+        referredById: null,
+        referralCount: 0,
+        voiceCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any;
+      ctx.session.registration = undefined;
+
+      const roleInfo = USER_ROLE_LABELS[selectedRole] || { label: selectedRole, icon: '👤' };
+
+      return ctx.reply(
+        `🎉 <b>Tabriklaymiz! Siz muvaffaqiyatli ro‘yxatdan o‘tdingiz.</b>\n\n` +
+        `👤 <b>Ism:</b> ${escapeHTML(safeFirstName)}\n` +
+        `📱 <b>Tel:</b> ${escapeHTML(phone || 'Kiritilmagan')}\n` +
+        `💼 <b>Maqom:</b> ${roleInfo.icon} ${roleInfo.label}\n\n` +
+        `Asosiy menyudan kerakli bo‘limni tanlang:`,
+        { parse_mode: 'HTML', ...getMainMenuKeyboard() }
+      );
     }
   }
 

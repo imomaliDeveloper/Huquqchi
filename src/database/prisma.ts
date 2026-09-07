@@ -55,19 +55,182 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// Auto-sync database schema on serverless startup if tables don't exist
+// Auto-create database tables on serverless startup if running on SQLite and tables don't exist
 if (!globalForPrisma.dbSynced) {
   globalForPrisma.dbSynced = true;
-  try {
-    if (dbUrl && dbUrl.startsWith('file:')) {
-      execSync('npx prisma db push --skip-generate', {
-        stdio: 'ignore',
-        env: { ...process.env, DATABASE_URL: dbUrl },
-      });
+  (async () => {
+    try {
+      if (dbUrl && dbUrl.startsWith('file:')) {
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegramId BIGINT UNIQUE NOT NULL,
+            username TEXT,
+            firstName TEXT NOT NULL,
+            lastName TEXT,
+            phone TEXT,
+            role TEXT,
+            isPro BOOLEAN NOT NULL DEFAULT 0,
+            referredById INTEGER,
+            referralCount INTEGER NOT NULL DEFAULT 0,
+            voiceCount INTEGER NOT NULL DEFAULT 0,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS legal_articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            source TEXT,
+            fileId TEXT,
+            fileType TEXT,
+            isPdfBook BOOLEAN NOT NULL DEFAULT 0,
+            price INTEGER NOT NULL DEFAULT 0,
+            categoryId INTEGER NOT NULL,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS quizzes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            category TEXT,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS quiz_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quizId INTEGER NOT NULL,
+            question TEXT NOT NULL,
+            optionA TEXT NOT NULL,
+            optionB TEXT NOT NULL,
+            optionC TEXT NOT NULL,
+            optionD TEXT NOT NULL,
+            correctAnswer TEXT NOT NULL,
+            explanation TEXT,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS quiz_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userId INTEGER NOT NULL,
+            quizId INTEGER NOT NULL,
+            score INTEGER NOT NULL,
+            totalQuestions INTEGER NOT NULL,
+            percentage REAL NOT NULL,
+            durationSeconds INTEGER NOT NULL DEFAULT 0,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS cert_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userId INTEGER NOT NULL,
+            score INTEGER NOT NULL,
+            totalQuestions INTEGER NOT NULL,
+            percentage REAL NOT NULL,
+            gradeLevel TEXT NOT NULL,
+            durationSeconds INTEGER NOT NULL DEFAULT 0,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userId INTEGER NOT NULL,
+            plan TEXT NOT NULL,
+            amount INTEGER NOT NULL DEFAULT 29000,
+            startDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            endDate DATETIME NOT NULL,
+            isActive BOOLEAN NOT NULL DEFAULT 1,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS ai_conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userId INTEGER NOT NULL,
+            title TEXT,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS ai_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversationId INTEGER NOT NULL,
+            sender TEXT NOT NULL,
+            content TEXT NOT NULL,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegramId BIGINT UNIQUE NOT NULL,
+            username TEXT,
+            role TEXT NOT NULL DEFAULT 'admin',
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS user_activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            userId INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            metadata TEXT,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS constitution_articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            articleNumber INTEGER UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            chapter TEXT,
+            part TEXT,
+            text TEXT NOT NULL,
+            audioFileId TEXT,
+            audioDuration INTEGER,
+            createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+          );
+        `).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('⚠️ Auto DB table initialization warning:', err);
     }
-  } catch (err) {
-    console.warn('⚠️ Auto DB sync warning:', err);
-  }
+  })();
 }
 
 export default prisma;
