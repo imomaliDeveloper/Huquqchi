@@ -477,7 +477,7 @@ function setupQuizEngine() {
   if (quizTimerInterval) clearInterval(quizTimerInterval);
 }
 
-function startQuizMode(mode) {
+async function startQuizMode(mode) {
   tg.HapticFeedback?.impactOccurred('heavy');
   quizMode = mode;
 
@@ -487,13 +487,24 @@ function startQuizMode(mode) {
   if (modeSelector) modeSelector.classList.add('hidden');
   if (quizBox) quizBox.classList.remove('hidden');
 
+  let pool = [...FULL_QUIZ_BANK];
+
+  // Try loading dynamic questions from database
+  try {
+    const res = await fetch('/api/quiz/questions');
+    const dbQuestions = await res.json();
+    if (Array.isArray(dbQuestions) && dbQuestions.length > 0) {
+      pool = [...dbQuestions, ...FULL_QUIZ_BANK];
+    }
+  } catch (e) {}
+
   if (mode === 'quick') {
     // 5 random questions
-    quizData = [...FULL_QUIZ_BANK].sort(() => 0.5 - Math.random()).slice(0, 5);
+    quizData = pool.sort(() => 0.5 - Math.random()).slice(0, 5);
     remainingSeconds = 5 * 45; // 3 min 45 sec
   } else {
     // 10 questions full cert exam
-    quizData = [...FULL_QUIZ_BANK];
+    quizData = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
     remainingSeconds = 15 * 60; // 15 min
   }
 
@@ -559,7 +570,9 @@ function renderQuizQuestion() {
 
   const q = quizData[currentQuizIdx];
   questionNum.textContent = `Savol ${currentQuizIdx + 1} / ${quizData.length}`;
-  questionText.textContent = q.question;
+
+  const imageHtml = q.imageUrl ? `<div class="mb-3 rounded-xl overflow-hidden border border-slate-700/80 bg-slate-950 p-1"><img src="${escapeHtml(q.imageUrl)}" alt="Test Rasmi" class="w-full max-h-56 object-contain rounded-lg"></div>` : '';
+  questionText.innerHTML = `${imageHtml}<span>${escapeHtml(q.question)}</span>`;
 
   optionsDiv.innerHTML = q.options.map((opt, idx) => `
     <button onclick="handleAnswer(${idx})" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-all font-medium flex items-center gap-2 active:scale-98">

@@ -473,6 +473,82 @@ router.post('/quiz/submit', async (req: Request, res: Response) => {
   }
 });
 
+// Get Quiz Questions (From DB or Fallback)
+router.get('/quiz/questions', async (req: Request, res: Response) => {
+  try {
+    const questions = await prisma.quizQuestion.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    if (questions.length === 0) {
+      return res.json([]);
+    }
+
+    const formatted = questions.map((q) => ({
+      id: q.id,
+      question: q.question,
+      imageUrl: q.imageUrl || null,
+      options: [q.optionA, q.optionB, q.optionC, q.optionD],
+      correct: q.correctAnswer === 'A' ? 0 : q.correctAnswer === 'B' ? 1 : q.correctAnswer === 'C' ? 2 : 3,
+      explanation: q.explanation || 'Rasmiy O‘zR Qonunchiligi asosida.',
+    }));
+
+    res.json(formatted);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Savollarni olishda xatolik' });
+  }
+});
+
+// Add New Quiz Question (Admin / API)
+router.post('/quiz/question/add', async (req: Request, res: Response) => {
+  try {
+    const { question, imageUrl, optionA, optionB, optionC, optionD, correctAnswer, explanation, quizId } = req.body;
+
+    if (!question || !optionA || !optionB || !optionC || !optionD || !correctAnswer) {
+      return res.status(400).json({ error: 'Savol va barcha 4 ta variantlar kiritilishi shart' });
+    }
+
+    // Default or create main quiz if quizId not provided
+    let targetQuizId = quizId;
+    if (!targetQuizId) {
+      let mainQuiz = await prisma.quiz.findFirst();
+      if (!mainQuiz) {
+        mainQuiz = await prisma.quiz.create({
+          data: {
+            title: 'Milliy Sertifikat & DTM Imtihon Testlari',
+            category: 'Konstitutsiyaviy Huquq',
+            description: 'Rasmiy DTM va Sertifikat tayyorgarlik testlari',
+          },
+        });
+      }
+      targetQuizId = mainQuiz.id;
+    }
+
+    const newQuestion = await prisma.quizQuestion.create({
+      data: {
+        quizId: targetQuizId,
+        question,
+        imageUrl: imageUrl || null,
+        optionA,
+        optionB,
+        optionC,
+        optionD,
+        correctAnswer: correctAnswer.toUpperCase(),
+        explanation: explanation || null,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: '✅ Yangi test savoli muvaffaqiyatli qo‘shildi!',
+      question: newQuestion,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Savol qo‘shishda xatolik' });
+  }
+});
+
 // Get User's Past AI Chat History
 router.get('/ai/history', async (req: Request, res: Response) => {
   try {

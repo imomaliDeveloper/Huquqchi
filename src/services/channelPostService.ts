@@ -8,13 +8,15 @@ export class ChannelPostService {
   public static async generateDailyQuizPost() {
     // Try to get a random question from database, or use default sample question
     const questions = await prisma.quizQuestion.findMany({ take: 20 });
-    let q = questions.length > 0 ? questions[Math.floor(Math.random() * questions.length)] : null;
+    let q: any = questions.length > 0 ? questions[Math.floor(Math.random() * questions.length)] : null;
 
     if (!q) {
       q = {
         id: 1,
         quizId: 1,
         question: 'Mehnat kodeksiga muvofiq har yillik asosiy mehnat ta’tili davomiyligi kamida necha ish kunidan iborat?',
+        imageUrl: null,
+        fileId: null,
         optionA: '15 ish kuni',
         optionB: '21 ish kuni',
         optionC: '30 ish kuni',

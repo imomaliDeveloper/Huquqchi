@@ -83,6 +83,8 @@ model QuizQuestion {
   quizId        Int
   quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
   question      String
+  imageUrl      String?  // Optional image URL for image-based quiz questions
+  fileId        String?  // Telegram Photo File ID
   optionA       String
   optionB       String
   optionC       String

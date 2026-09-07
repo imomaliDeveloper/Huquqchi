@@ -9,6 +9,7 @@ export interface AdminQuizSessionData {
     | 'AWAITING_QUIZ_TITLE'
     | 'AWAITING_QUIZ_CATEGORY'
     | 'AWAITING_QUESTION_TEXT'
+    | 'AWAITING_QUESTION_IMAGE'
     | 'AWAITING_OPTION_A'
     | 'AWAITING_OPTION_B'
     | 'AWAITING_OPTION_C'
@@ -20,6 +21,8 @@ export interface AdminQuizSessionData {
   quizCategory?: string;
   currentQuestion?: {
     text?: string;
+    imageUrl?: string;
+    fileId?: string;
     optionA?: string;
     optionB?: string;
     optionC?: string;
@@ -57,15 +60,12 @@ export async function handleAdminQuizSteps(ctx: MyContext, next: () => Promise<v
     return next();
   }
 
-  if (!ctx.message || !('text' in ctx.message)) {
-    return next();
-  }
-
-  const text = ctx.message.text.trim();
   const step = quizSession.step;
+  const hasMessage = !!ctx.message;
+  const text = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : '';
 
   // STEP 1: Quiz Title
-  if (step === 'AWAITING_QUIZ_TITLE') {
+  if (step === 'AWAITING_QUIZ_TITLE' && text) {
     if (text.length < 3) {
       return ctx.reply('⚠️ Test sarlavhasi kamida 3 ta harfdan iborat bo‘lishi kerak:');
     }
@@ -87,22 +87,54 @@ export async function handleAdminQuizSteps(ctx: MyContext, next: () => Promise<v
   }
 
   // STEP 3: Question Text Input
-  if (step === 'AWAITING_QUESTION_TEXT') {
+  if (step === 'AWAITING_QUESTION_TEXT' && text) {
     if (text.length < 3) {
       return ctx.reply('⚠️ Savol matni o‘ta qisqa. Qayta kiriting:');
     }
 
     quizSession.currentQuestion = quizSession.currentQuestion || {};
     quizSession.currentQuestion.text = text;
-    quizSession.step = 'AWAITING_OPTION_A';
+    quizSession.step = 'AWAITING_QUESTION_IMAGE';
 
-    return ctx.reply(`❓ Savol: <b>"${escapeHTML(text)}"</b>\n\nEndi <b>A variant</b> javobini kiriting:`, {
-      parse_mode: 'HTML',
-    });
+    const buttons = [[Markup.button.callback('⏭ Rasmsiz davom etish', 'admin_skip_photo')]];
+
+    return ctx.reply(
+      `❓ Savol: <b>"${escapeHTML(text)}"</b>\n\n` +
+      `🖼 <b>Ushbu savolga Rasm/Foto biriktirmoqchimisiz?</b>\n` +
+      `Ushbu chatga <b>rasm (skrinshot)</b> yoki rasm URL havolasini yuboring. Agar rasm bo'lmasa, quyidagi tugmani bosing:`,
+      { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+    );
+  }
+
+  // STEP 3.5: Question Image Input (Photo message or Image URL)
+  if (step === 'AWAITING_QUESTION_IMAGE') {
+    if (ctx.message && 'photo' in ctx.message && Array.isArray(ctx.message.photo) && ctx.message.photo.length > 0) {
+      const highestResPhoto = ctx.message.photo[ctx.message.photo.length - 1];
+      if (highestResPhoto) {
+        quizSession.currentQuestion!.fileId = highestResPhoto.file_id;
+
+        // Get Telegram photo direct link if available
+        try {
+          const link = await ctx.telegram.getFileLink(highestResPhoto.file_id);
+          quizSession.currentQuestion!.imageUrl = link.href;
+        } catch (err) {}
+      }
+
+      quizSession.step = 'AWAITING_OPTION_A';
+      return ctx.reply(`✅ Rasm biriktirildi! 🖼\n\nEndi <b>A variant</b> javobini kiriting:`, {
+        parse_mode: 'HTML',
+      });
+    } else if (text && text.startsWith('http')) {
+      quizSession.currentQuestion!.imageUrl = text;
+      quizSession.step = 'AWAITING_OPTION_A';
+      return ctx.reply(`✅ Rasm URL biriktirildi! 🖼\n\nEndi <b>A variant</b> javobini kiriting:`, {
+        parse_mode: 'HTML',
+      });
+    }
   }
 
   // STEP 4: Option A
-  if (step === 'AWAITING_OPTION_A') {
+  if (step === 'AWAITING_OPTION_A' && text) {
     quizSession.currentQuestion!.optionA = text;
     quizSession.step = 'AWAITING_OPTION_B';
     return ctx.reply(`🅰️ A variant: <b>"${escapeHTML(text)}"</b>\n\nEndi <b>B variant</b> javobini kiriting:`, {
@@ -111,7 +143,7 @@ export async function handleAdminQuizSteps(ctx: MyContext, next: () => Promise<v
   }
 
   // STEP 5: Option B
-  if (step === 'AWAITING_OPTION_B') {
+  if (step === 'AWAITING_OPTION_B' && text) {
     quizSession.currentQuestion!.optionB = text;
     quizSession.step = 'AWAITING_OPTION_C';
     return ctx.reply(`🅱️ B variant: <b>"${escapeHTML(text)}"</b>\n\nEndi <b>C variant</b> javobini kiriting:`, {
@@ -120,7 +152,7 @@ export async function handleAdminQuizSteps(ctx: MyContext, next: () => Promise<v
   }
 
   // STEP 6: Option C
-  if (step === 'AWAITING_OPTION_C') {
+  if (step === 'AWAITING_OPTION_C' && text) {
     quizSession.currentQuestion!.optionC = text;
     quizSession.step = 'AWAITING_OPTION_D';
     return ctx.reply(`🅲️ C variant: <b>"${escapeHTML(text)}"</b>\n\nEndi <b>D variant</b> javobini kiriting:`, {
@@ -129,7 +161,7 @@ export async function handleAdminQuizSteps(ctx: MyContext, next: () => Promise<v
   }
 
   // STEP 7: Option D
-  if (step === 'AWAITING_OPTION_D') {
+  if (step === 'AWAITING_OPTION_D' && text) {
     quizSession.currentQuestion!.optionD = text;
     quizSession.step = 'AWAITING_CORRECT_ANSWER';
 
@@ -150,7 +182,7 @@ export async function handleAdminQuizSteps(ctx: MyContext, next: () => Promise<v
   }
 
   // STEP 9: Explanation Input (Optional)
-  if (step === 'AWAITING_EXPLANATION') {
+  if (step === 'AWAITING_EXPLANATION' && text) {
     quizSession.currentQuestion!.explanation = text === '-' ? '' : text;
     return saveQuestionToDatabase(ctx, quizSession);
   }
@@ -211,6 +243,18 @@ export async function handleAdminCorrectAnswerSelect(ctx: MyContext, chosenAnswe
   ).catch(() => {});
 }
 
+export async function handleAdminSkipPhoto(ctx: MyContext) {
+  await ctx.answerCbQuery().catch(() => {});
+
+  const quizSession: AdminQuizSessionData = (ctx.session as any)?.adminQuiz;
+  if (!quizSession || !quizSession.currentQuestion) return;
+
+  quizSession.step = 'AWAITING_OPTION_A';
+  return ctx.reply(`⏩ Rasm o'tkazib yuborildi.\n\nEndi <b>A variant</b> javobini kiriting:`, {
+    parse_mode: 'HTML',
+  });
+}
+
 export async function handleAdminSkipExplanation(ctx: MyContext) {
   await ctx.answerCbQuery().catch(() => {});
 
@@ -234,6 +278,8 @@ async function saveQuestionToDatabase(ctx: MyContext, quizSession: AdminQuizSess
       data: {
         quizId: quizSession.quizId,
         question: q.text || 'Savol',
+        imageUrl: q.imageUrl || null,
+        fileId: q.fileId || null,
         optionA: q.optionA || 'A',
         optionB: q.optionB || 'B',
         optionC: q.optionC || 'C',

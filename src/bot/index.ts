@@ -49,6 +49,7 @@ import {
   handleAdminCreateQuizStart,
   handleAdminQuizCategorySelect,
   handleAdminCorrectAnswerSelect,
+  handleAdminSkipPhoto,
   handleAdminSkipExplanation,
   handleAdminAddAnotherQuestion,
   handleAdminFinishQuiz,
@@ -156,6 +157,7 @@ export function setupBotHandlers() {
   bot.action('admin_create_quiz', handleAdminCreateQuizStart);
   bot.action(/^admin_quiz_cat_(.+)$/, (ctx) => handleAdminQuizCategorySelect(ctx, ctx.match[1]!));
   bot.action(/^admin_ans_(A|B|C|D)$/, (ctx) => handleAdminCorrectAnswerSelect(ctx, ctx.match[1]!));
+  bot.action('admin_skip_photo', handleAdminSkipPhoto);
   bot.action('admin_skip_explanation', handleAdminSkipExplanation);
   bot.action('admin_add_another_question', handleAdminAddAnotherQuestion);
   bot.action('admin_finish_quiz', handleAdminFinishQuiz);
