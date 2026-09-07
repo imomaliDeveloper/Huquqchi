@@ -1,7 +1,7 @@
 import { MyContext } from '../bot/context';
 import prisma from '../database/prisma';
 import { Markup } from 'telegraf';
-import { escapeHTML } from '../utils/helpers';
+import { escapeHTML, sanitizeExternalAds } from '../utils/helpers';
 import UI from '../utils/ui';
 import { seedDtmMockExam, seedSchoolTextbookQuizzes } from '../data/dtmMockExamData';
 
@@ -341,15 +341,20 @@ export async function handleQuizStart(ctx: MyContext, quizId: number) {
       const quizLink = linkMatch ? linkMatch[1] : null;
 
       if (quizLink) {
+        const cleanTitle = sanitizeExternalAds(quiz.title);
+        const cleanDesc = sanitizeExternalAds(quiz.description || '');
+
         const buttons = [
           [Markup.button.url('🚀 QuizBot Testini Boshlash', quizLink)],
+          [Markup.button.url('📢 @Huquq_study Kanalimiz', 'https://t.me/Huquq_study')],
           [Markup.button.callback('🔙 Testlar Ro‘yxatiga Qaytish', 'quiz_interactive_home')],
         ];
 
         const text =
-          `🎲 <b>${escapeHTML(quiz.title)}</b>\n\n` +
+          `🎲 <b>${escapeHTML(cleanTitle)}</b>\n\n` +
           `📂 <b>Bo‘lim:</b> <code>${escapeHTML(quiz.category || 'Huquqiy Testlar')}</code>\n` +
-          `📝 <b>Tavsif:</b> ${escapeHTML(quiz.description || 'Telegram QuizBot interaktiv testi')}\n\n` +
+          `📝 <b>Tavsif:</b> ${escapeHTML(cleanDesc || 'Telegram QuizBot interaktiv testi')}\n\n` +
+          `📢 <b>Rasmiy Kanal:</b> @Huquq_study\n\n` +
           `💡 <i>Ushbu test Telegram @QuizBot platformasida tayyorlangan. Quyidagi tugma orqali test yechishni boshlashingiz mumkin:</i>`;
 
         if (ctx.callbackQuery) {

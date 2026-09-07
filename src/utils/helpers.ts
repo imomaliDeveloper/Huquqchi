@@ -54,3 +54,32 @@ export function formatTelegramHtml(text: string | null | undefined): string {
 
   return formatted.trim();
 }
+
+/**
+ * Replaces third-party channel mentions/links with @Huquq_study official channel link.
+ */
+export function sanitizeExternalAds(text: string | null | undefined): string {
+  if (!text) return '';
+
+  let cleaned = text;
+
+  // Replace Telegram URLs that point to third-party channels (keep QuizBot start links and Huquq_study)
+  cleaned = cleaned.replace(/https?:\/\/t\.me\/([a-zA-Z0-9_]+)(\?[^\s\n]+)?/gi, (match, username) => {
+    const lower = username.toLowerCase();
+    if (lower === 'quizbot' || lower === 'huquq_study' || lower === 'huquqchi_bot') {
+      return match;
+    }
+    return 'https://t.me/Huquq_study';
+  });
+
+  // Replace third-party @mentions with @Huquq_study
+  cleaned = cleaned.replace(/@([a-zA-Z0-9_]+)/g, (match, username) => {
+    const lower = username.toLowerCase();
+    if (lower === 'huquq_study' || lower === 'huquqchi_bot' || lower === 'quizbot') {
+      return match;
+    }
+    return '@Huquq_study';
+  });
+
+  return cleaned;
+}

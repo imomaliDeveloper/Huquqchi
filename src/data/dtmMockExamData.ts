@@ -354,4 +354,30 @@ export async function seedSchoolTextbookQuizzes() {
       }
     } catch (e) {}
   }
+
+  // Clean existing database quizzes of any third party channel ads
+  try {
+    const allQuizzes = await prisma.quiz.findMany();
+    for (const q of allQuizzes) {
+      let needsUpdate = false;
+      let newTitle = q.title;
+      let newDesc = q.description || '';
+
+      if (/@(?!(?:Huquq_study|Huquqchi_bot|QuizBot)\b)[a-zA-Z0-9_]+/i.test(newTitle)) {
+        newTitle = newTitle.replace(/@(?!(?:Huquq_study|Huquqchi_bot|QuizBot)\b)[a-zA-Z0-9_]+/gi, '@Huquq_study');
+        needsUpdate = true;
+      }
+      if (/@(?!(?:Huquq_study|Huquqchi_bot|QuizBot)\b)[a-zA-Z0-9_]+/i.test(newDesc)) {
+        newDesc = newDesc.replace(/@(?!(?:Huquq_study|Huquqchi_bot|QuizBot)\b)[a-zA-Z0-9_]+/gi, '@Huquq_study');
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        await prisma.quiz.update({
+          where: { id: q.id },
+          data: { title: newTitle, description: newDesc },
+        });
+      }
+    }
+  } catch (err) {}
 }

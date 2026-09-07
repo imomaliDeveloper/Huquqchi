@@ -2,7 +2,7 @@ import { MyContext } from '../bot/context';
 import AdminService from '../services/adminService';
 import prisma from '../database/prisma';
 import { Markup } from 'telegraf';
-import { escapeHTML } from '../utils/helpers';
+import { escapeHTML, sanitizeExternalAds } from '../utils/helpers';
 
 export interface AdminQuizSessionData {
   step?:
@@ -582,7 +582,8 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
   } else if (isQuizBotPost && urls.length > 0) {
     // Process QuizBot Link import
     try {
-      const quizTitle = extractQuizTitle(msgText);
+      const rawTitle = extractQuizTitle(msgText);
+      const quizTitle = sanitizeExternalAds(rawTitle);
       const quizLink = urls[0];
       const savolMatch = msgText.match(/(\d+)\s*ta\s*savol|(\d+)\s*savol/i);
       const countText = savolMatch ? `${savolMatch[1] || savolMatch[2]} ta savol` : 'Interaktiv test';
@@ -596,7 +597,7 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
           data: {
             title: quizTitle,
             category: categoryName,
-            description: `🔗 Telegram QuizBot Testi: ${quizLink} (${countText})`,
+            description: `🔗 Telegram QuizBot Testi: ${quizLink} (${countText})\n📢 @Huquq_study`,
           },
         });
       } else {
@@ -604,7 +605,7 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
           where: { id: quiz.id },
           data: {
             category: categoryName,
-            description: `🔗 Telegram QuizBot Testi: ${quizLink} (${countText})`,
+            description: `🔗 Telegram QuizBot Testi: ${quizLink} (${countText})\n📢 @Huquq_study`,
           },
         });
       }
