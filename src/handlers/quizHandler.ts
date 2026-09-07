@@ -52,9 +52,17 @@ export async function handleInteractiveQuizView(ctx: MyContext) {
       return ctx.editMessageText(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(emptyButtons) }).catch(() => {});
     }
 
-    const buttons = quizzes.map((quiz) => [
-      Markup.button.callback(`📝 ${quiz.title} (${quiz._count.questions} ta savol)`, `quiz_start_${quiz.id}`),
-    ]);
+    const buttons = quizzes.map((quiz) => {
+      let countText = `${quiz._count.questions} ta savol`;
+      if (quiz._count.questions === 0 && quiz.description) {
+        const m = quiz.description.match(/(\d+)\s*ta\s*savol/i);
+        if (m) countText = `${m[1]} ta savol`;
+        else if (quiz.description.includes('http')) countText = 'QuizBot Link';
+      }
+      return [
+        Markup.button.callback(`📝 ${quiz.title} (${countText})`, `quiz_start_${quiz.id}`),
+      ];
+    });
 
     buttons.push([Markup.button.callback('🔙 Testlar Markaziga Qaytish', 'back_to_quizzes')]);
 
@@ -272,8 +280,36 @@ export async function handleQuizStart(ctx: MyContext, quizId: number) {
       include: { questions: { orderBy: { id: 'asc' } } },
     });
 
-    if (!quiz || quiz.questions.length === 0) {
-      return ctx.reply('⚠️ Ushbu testda savollar topilmadi.');
+    if (!quiz) {
+      return ctx.reply('⚠️ Test topilmadi.');
+    }
+
+    if (quiz.questions.length === 0) {
+      const linkMatch = quiz.description?.match(/(https?:\/\/[^\s\n]+)/);
+      const quizLink = linkMatch ? linkMatch[1] : null;
+
+      if (quizLink) {
+        const buttons = [
+          [Markup.button.url('🚀 QuizBot Testini Boshlash', quizLink)],
+          [Markup.button.callback('🔙 Testlar Ro‘yxatiga Qaytish', 'quiz_interactive_home')],
+        ];
+
+        const text =
+          `🎲 <b>${escapeHTML(quiz.title)}</b>\n\n` +
+          `📂 <b>Bo‘lim:</b> <code>${escapeHTML(quiz.category || 'Huquqiy Testlar')}</code>\n` +
+          `📝 <b>Tavsif:</b> ${escapeHTML(quiz.description || 'Telegram QuizBot interaktiv testi')}\n\n` +
+          `💡 <i>Ushbu test Telegram @QuizBot platformasida tayyorlangan. Quyidagi tugma orqali test yechishni boshlashingiz mumkin:</i>`;
+
+        if (ctx.callbackQuery) {
+          return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }).catch(() => {
+            return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
+          });
+        }
+
+        return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
+      }
+
+      return ctx.reply('⚠️ Ushbu testda hali savollar mavjud emas.');
     }
 
     ctx.session = ctx.session || {};

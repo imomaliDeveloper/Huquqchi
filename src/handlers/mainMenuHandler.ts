@@ -19,10 +19,10 @@ import { handleRiskCheckView, handleRiskCheckMessage } from './riskCheckHandler'
 import { handleConstitutionView, handleAdminConstitutionAudioStep, handleConstitutionArticleDetails } from './constitutionHandler';
 
 export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<void>) {
-  // Check if Admin Quiz Import Mode is active (checked BEFORE AI routing so forwarded polls/text are saved to DB!)
+  // Check if Admin Quiz Import Mode is active (checked BEFORE AI routing so forwarded polls/text/QuizBot posts are saved to DB!)
   if ((ctx.session as any)?.adminQuizImportCategory && ctx.message) {
-    const handled = await handleAdminPollImport(ctx);
-    if (handled) return;
+    await handleAdminPollImport(ctx);
+    return;
   }
 
   // Handle Admin Broadcast input if session active (checked BEFORE text check so media/forwards work)

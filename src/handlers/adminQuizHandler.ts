@@ -405,6 +405,82 @@ export async function handleAdminStopPollImport(ctx: MyContext) {
   }).catch(() => {});
 }
 
+function extractUrlsFromMessage(ctx: MyContext): string[] {
+  const urls: string[] = [];
+  const msg = ctx.message;
+  if (!msg) return urls;
+
+  const text = 'text' in msg ? msg.text : ('caption' in msg ? msg.caption : '');
+  if (text) {
+    const matches = text.match(/https?:\/\/[^\s\n<>()"]+/g);
+    if (matches) {
+      for (const m of matches) {
+        if (!urls.includes(m)) urls.push(m);
+      }
+    }
+  }
+
+  // Check entities
+  const entities = 'entities' in msg ? msg.entities : ('caption_entities' in msg ? (msg as any).caption_entities : []);
+  if (Array.isArray(entities)) {
+    for (const ent of entities) {
+      if (ent.type === 'url' && text) {
+        const u = text.substring(ent.offset, ent.offset + ent.length);
+        if (u && !urls.includes(u)) urls.push(u);
+      } else if (ent.type === 'text_link' && ent.url) {
+        if (!urls.includes(ent.url)) urls.push(ent.url);
+      }
+    }
+  }
+
+  // Check inline_keyboard buttons
+  if ((msg as any).reply_markup?.inline_keyboard) {
+    for (const row of (msg as any).reply_markup.inline_keyboard) {
+      for (const btn of row) {
+        if (btn.url && !urls.includes(btn.url)) {
+          urls.push(btn.url);
+        }
+      }
+    }
+  }
+
+  return urls;
+}
+
+function extractQuizTitle(text: string): string {
+  if (!text) return 'Huquqiy Quiz Test';
+
+  // 1. Check for text inside quotes “...” or "..." or '...' or «...»
+  const quoteMatch = text.match(/["“'«]([^"”'»]+)["”'»]/);
+  if (quoteMatch && quoteMatch[1] && quoteMatch[1].trim().length > 2) {
+    return quoteMatch[1].trim();
+  }
+
+  // 2. Look for lines starting with 🎲, ⚖️, 📌, 📝
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  for (const line of lines) {
+    if (/^[🎲⚖️📌📝]\s*(.+)/.test(line)) {
+      let clean = line.replace(/^[🎲⚖️📌📝]\s*/, '').replace(/via @\w+/i, '').replace(/testi$/i, '').trim();
+      if (clean.startsWith('"') || clean.startsWith('“')) {
+        clean = clean.replace(/^["“']|["”']$/g, '').trim();
+      }
+      if (clean.length > 2 && !clean.toLowerCase().startsWith('http')) {
+        return clean;
+      }
+    }
+  }
+
+  // 3. Fallback to first non-URL line
+  for (const line of lines) {
+    if (!line.toLowerCase().startsWith('http') && !line.includes('via @') && !/savol/i.test(line)) {
+      let clean = line.replace(/^["“']|["”']$/g, '').trim();
+      if (clean.length > 2) return clean.slice(0, 60);
+    }
+  }
+
+  return 'Huquqiy Quiz Test';
+}
+
 export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
   if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return false;
 
@@ -413,107 +489,200 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
 
   const poll = ctx.message && 'poll' in ctx.message ? ctx.message.poll : null;
   const msgText = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : (ctx.message && 'caption' in ctx.message ? (ctx.message as any).caption.trim() : '');
+  const urls = extractUrlsFromMessage(ctx);
 
-  let question = '';
-  let optionA = 'A';
-  let optionB = 'B';
-  let optionC = 'C';
-  let optionD = 'D';
-  let correctAnswer = 'A';
-  let explanation: string | null = null;
+  // Detect QuizBot Share Post format or Link Post
+  const isQuizBotPost =
+    urls.length > 0 ||
+    /via @quizbot|@quizbot|t\.me\/|testi|savol|soniya/i.test(msgText) ||
+    (ctx.message && 'forward_from' in ctx.message && (ctx.message as any).forward_from?.username?.toLowerCase() === 'quizbot');
 
   if (poll) {
-    question = poll.question;
+    const question = poll.question;
     const options = poll.options.map((o: any) => o.text);
-    optionA = options[0] || 'A';
-    optionB = options[1] || 'B';
-    optionC = options[2] || 'C';
-    optionD = options[3] || 'D';
+    const optionA = options[0] || 'A';
+    const optionB = options[1] || 'B';
+    const optionC = options[2] || 'C';
+    const optionD = options[3] || 'D';
 
     const correctIndex = poll.correct_option_id !== undefined ? poll.correct_option_id : 0;
     const letterMap = ['A', 'B', 'C', 'D'];
-    correctAnswer = letterMap[correctIndex] || 'A';
-    explanation = poll.explanation || null;
+    const correctAnswer = letterMap[correctIndex] || 'A';
+    const explanation = poll.explanation || null;
+
+    try {
+      const quizTitle = `${categoryName} Darslik Testlari`;
+      let quiz = await prisma.quiz.findFirst({ where: { title: quizTitle } });
+
+      if (!quiz) {
+        quiz = await prisma.quiz.create({
+          data: {
+            title: quizTitle,
+            category: categoryName,
+            description: `Admin tomonidan yuklangan ${categoryName} bo'yicha poll test to'plami.`,
+          },
+        });
+      }
+
+      await prisma.quizQuestion.create({
+        data: {
+          quizId: quiz.id,
+          question,
+          optionA,
+          optionB,
+          optionC,
+          optionD,
+          correctAnswer,
+          explanation: explanation || null,
+        },
+      });
+
+      const totalCount = await prisma.quizQuestion.count({ where: { quizId: quiz.id } });
+      const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
+
+      await ctx.reply(
+        `✅ <b>POLL SAVOL BAZAGA SAQLANDI! (#${totalCount})</b>\n\n` +
+        `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
+        `❓ <b>Savol:</b> ${escapeHTML(question.slice(0, 300))}\n` +
+        `🅰️ ${escapeHTML(optionA)}\n` +
+        `🅱️ ${escapeHTML(optionB)}\n` +
+        `🅲️ ${escapeHTML(optionC)}\n` +
+        `🅳️ ${escapeHTML(optionD)}\n\n` +
+        `🎯 <b>To‘g‘ri javob:</b> <b>${correctAnswer}</b>\n\n` +
+        `💡 <i>Keyingi QuizBot yoki Poll testini bemalol FORWARD qilishingiz mumkin!</i>`,
+        { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+      );
+      return true;
+    } catch (error) {
+      console.error('Error saving imported poll:', error);
+      await ctx.reply('⚠️ Poll savolini saqlashda xatolik yuz berdi.');
+      return true;
+    }
+  } else if (isQuizBotPost && urls.length > 0) {
+    // Process QuizBot Link import
+    try {
+      const quizTitle = extractQuizTitle(msgText);
+      const quizLink = urls[0];
+      const savolMatch = msgText.match(/(\d+)\s*ta\s*savol|(\d+)\s*savol/i);
+      const countText = savolMatch ? `${savolMatch[1] || savolMatch[2]} ta savol` : 'Interaktiv test';
+
+      let quiz = await prisma.quiz.findFirst({
+        where: { title: quizTitle },
+      });
+
+      if (!quiz) {
+        quiz = await prisma.quiz.create({
+          data: {
+            title: quizTitle,
+            category: categoryName,
+            description: `🔗 Telegram QuizBot Testi: ${quizLink} (${countText})`,
+          },
+        });
+      } else {
+        await prisma.quiz.update({
+          where: { id: quiz.id },
+          data: {
+            category: categoryName,
+            description: `🔗 Telegram QuizBot Testi: ${quizLink} (${countText})`,
+          },
+        });
+      }
+
+      const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
+
+      await ctx.reply(
+        `✅ <b>QUIZBOT TESTI BAZAGA SAQLANDI!</b>\n\n` +
+        `📌 <b>Test Nomi:</b> <b>"${escapeHTML(quizTitle)}"</b>\n` +
+        `📂 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
+        `📊 <b>Hajmi:</b> ${escapeHTML(countText)}\n` +
+        `🔗 <b>Havola:</b> ${escapeHTML(quizLink)}\n\n` +
+        `💡 <i>Ushbu test "📝 Testlar" -> "🎯 Interaktiv Onlayn Testlar" bo‘limida muvaffaqiyatli paydo bo‘ldi!\n` +
+        `Keyingi QuizBot testini bemalol FORWARD (Uzatish) qilishingiz mumkin!</i>`,
+        { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+      );
+      return true;
+    } catch (error) {
+      console.error('Error saving QuizBot test link:', error);
+      await ctx.reply('⚠️ QuizBot testini saqlashda xatolik yuz berdi.');
+      return true;
+    }
   } else if (msgText) {
-    // If Admin forwarded or typed a text quiz message during import mode
+    // Check if text has options A), B), C), D)
     const lines = msgText.split('\n').map((l: string) => l.trim()).filter(Boolean);
-    
-    // Attempt to extract options A), B), C), D) or A., B., C., D.
     let foundA = lines.find((l: string) => /^a[).]/i.test(l));
     let foundB = lines.find((l: string) => /^b[).]/i.test(l));
     let foundC = lines.find((l: string) => /^c[).]/i.test(l));
     let foundD = lines.find((l: string) => /^d[).]/i.test(l));
+
+    let optionA = 'A';
+    let optionB = 'B';
+    let optionC = 'C';
+    let optionD = 'D';
+    let correctAnswer = 'A';
 
     if (foundA) optionA = foundA.replace(/^a[).]\s*/i, '');
     if (foundB) optionB = foundB.replace(/^b[).]\s*/i, '');
     if (foundC) optionC = foundC.replace(/^c[).]\s*/i, '');
     if (foundD) optionD = foundD.replace(/^d[).]\s*/i, '');
 
-    // Extract correct answer if stated in text
     const ansMatch = msgText.match(/(?:to'g'ri\s*javob|javob|kalit|ans|key)\s*[:=-]?\s*([a-d])/i);
     if (ansMatch && ansMatch[1]) {
       correctAnswer = ansMatch[1].toUpperCase();
     }
 
-    // Question is lines before options
     const questionLines = lines.filter((l: string) => !/^[a-d][).]/i.test(l) && !/(?:to'g'ri\s*javob|javob|kalit)\s*[:=-]/i.test(l));
-    question = questionLines.join(' ') || msgText;
-  } else {
-    return false;
-  }
+    const question = questionLines.join(' ') || msgText;
 
-  try {
-    const quizTitle = `${categoryName} Darslik Testlari`;
+    try {
+      const quizTitle = `${categoryName} Darslik Testlari`;
+      let quiz = await prisma.quiz.findFirst({ where: { title: quizTitle } });
 
-    let quiz = await prisma.quiz.findFirst({
-      where: { title: quizTitle },
-    });
+      if (!quiz) {
+        quiz = await prisma.quiz.create({
+          data: {
+            title: quizTitle,
+            category: categoryName,
+            description: `Admin tomonidan yuklangan ${categoryName} bo'yicha test to'plami.`,
+          },
+        });
+      }
 
-    if (!quiz) {
-      quiz = await prisma.quiz.create({
+      await prisma.quizQuestion.create({
         data: {
-          title: quizTitle,
-          category: categoryName,
-          description: `Admin tomonidan yuklangan ${categoryName} bo'yicha test to'plami.`,
+          quizId: quiz.id,
+          question,
+          optionA,
+          optionB,
+          optionC,
+          optionD,
+          correctAnswer,
+          explanation: null,
         },
       });
+
+      const totalCount = await prisma.quizQuestion.count({ where: { quizId: quiz.id } });
+      const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
+
+      await ctx.reply(
+        `✅ <b>SAVOL BAZAGA SAQLANDI! (#${totalCount})</b>\n\n` +
+        `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
+        `❓ <b>Savol:</b> ${escapeHTML(question.slice(0, 300))}\n` +
+        `🅰️ ${escapeHTML(optionA)}\n` +
+        `🅱️ ${escapeHTML(optionB)}\n` +
+        `🅲️ ${escapeHTML(optionC)}\n` +
+        `🅳️ ${escapeHTML(optionD)}\n\n` +
+        `🎯 <b>To‘g‘ri javob:</b> <b>${correctAnswer}</b>\n\n` +
+        `💡 <i>Keyingi testni (Poll yoki Matn) bemalol FORWARD qilishingiz mumkin!</i>`,
+        { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+      );
+      return true;
+    } catch (error) {
+      console.error('Error saving text quiz:', error);
+      await ctx.reply('⚠️ Test savolini saqlashda xatolik yuz berdi.');
+      return true;
     }
-
-    await prisma.quizQuestion.create({
-      data: {
-        quizId: quiz.id,
-        question,
-        optionA,
-        optionB,
-        optionC,
-        optionD,
-        correctAnswer,
-        explanation: explanation || null,
-      },
-    });
-
-    const totalCount = await prisma.quizQuestion.count({
-      where: { quizId: quiz.id },
-    });
-
-    const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
-
-    await ctx.reply(
-      `✅ <b>SAVOL BAZAGA MUVAFFAQIYATLI SAQLANDI! (#${totalCount})</b>\n\n` +
-      `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
-      `❓ <b>Savol:</b> ${escapeHTML(question.slice(0, 300))}\n` +
-      `🅰️ ${escapeHTML(optionA)}\n` +
-      `🅱️ ${escapeHTML(optionB)}\n` +
-      `🅲️ ${escapeHTML(optionC)}\n` +
-      `🅳️ ${escapeHTML(optionD)}\n\n` +
-      `🎯 <b>To‘g‘ri javob:</b> <b>${correctAnswer}</b>\n\n` +
-      `💡 <i>Keyingi testni (Poll yoki Matn) bemalol FORWARD qilishingiz mumkin!</i>`,
-      { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
-    );
-    return true;
-  } catch (error) {
-    console.error('Error saving imported poll:', error);
-    await ctx.reply('⚠️ Savolni saqlashda xatolik yuz berdi.');
+  } else {
+    await ctx.reply('⚠️ Noma’lum xabar formati. Iltimos, Telegram QuizBot testini yoki Poll savolini FORWARD yuboring.');
     return true;
   }
 }
