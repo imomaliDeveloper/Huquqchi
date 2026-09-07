@@ -3,6 +3,7 @@ services:
     name: huquqchi-bot
     env: docker
     dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -12,3 +13,5 @@ services:
         value: 8708913937:AAFxVGita3lGuBLm1xgIWGdzhXh-SrEko7c
       - key: MINI_APP_URL
         value: https://huquqchi-lovat.vercel.app
+
+
