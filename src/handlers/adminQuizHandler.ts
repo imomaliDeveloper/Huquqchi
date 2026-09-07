@@ -618,7 +618,7 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
         `📂 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
         `📊 <b>Hajmi:</b> ${escapeHTML(countText)}\n` +
         `🔗 <b>Havola:</b> ${escapeHTML(quizLink)}\n\n` +
-        `💡 <i>Ushbu test "📝 Testlar" -> "🎯 Interaktiv Onlayn Testlar" bo‘limida muvaffaqiyatli paydo bo‘ldi!\n` +
+        `💡 <i>Ushbu test "📝 Testlar" -> "🎯 Interaktiv Quiz Testlar" bo‘limida muvaffaqiyatli paydo bo‘ldi!\n` +
         `Keyingi QuizBot testini bemalol FORWARD (Uzatish) qilishingiz mumkin!</i>`,
         { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
       );

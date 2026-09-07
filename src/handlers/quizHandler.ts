@@ -10,13 +10,13 @@ export async function handleQuizView(ctx: MyContext) {
     const text =
       `📝 ${UI.header('HUQUQIY TESTLAR VA SAVOLNOMALAR MARKAZI', '🎯')}\n\n` +
       `Bilimingizni sinash va imtihonlarga tayyorlanish uchun kerakli bo‘limni tanlang:\n\n` +
-      `🎯 <b>Interaktiv Onlayn Testlar</b> – Savollarga onlayn javob bering va natijani zudlik bilan bilib oling.\n\n` +
+      `🎯 <b>Interaktiv Quiz Testlar</b> – Savollarga onlayn javob bering va natijani zudlik bilan bilib oling.\n\n` +
       `📄 <b>PDF Testlar va Savolnomalar</b> – DTMB, OTM va Milliy Sertifikat imtihon test to‘plamlarini PDF formatda yuklab oling.\n\n` +
       `📊 <b>Mening Natijalarim</b> – Ishlagan testlaringiz statistikasi va natijalari.\n\n` +
       `${UI.DIVIDER}`;
 
     const buttons = [
-      [Markup.button.callback('🎯 Interaktiv Onlayn Testlar', 'quiz_interactive_home')],
+      [Markup.button.callback('🎯 Interaktiv Quiz Testlar', 'quiz_interactive_home')],
       [Markup.button.callback('📄 PDF Testlar va Savolnomalar', 'quiz_pdf_home')],
       [Markup.button.callback('📊 Mening Natijalarim', 'quiz_my_results')],
     ];
@@ -53,7 +53,7 @@ export async function handleInteractiveQuizView(ctx: MyContext) {
     ];
 
     const text =
-      `🎯 ${UI.header('INTERAKTIV ONLAYN TESTLAR', '📝')}\n\n` +
+      `🎯 ${UI.header('INTERAKTIV QUIZ TESTLAR', '📝')}\n\n` +
       `Bilimingizni sinash va imtihonlarga tayyorlanish uchun kerakli darslik yoki imtihon bo‘limini tanlang:\n\n` +
       `${UI.DIVIDER}`;
 
@@ -289,7 +289,7 @@ export async function handleQuizMyResults(ctx: MyContext) {
       return ctx.editMessageText(
         `📊 <b>MENING NATIJALARIM</b>\n\n` +
         `Siz hali birorta ham interaktiv test ishlamagansiz.\n` +
-        `"🎯 Interaktiv Onlayn Testlar" bo‘limiga o‘tib, birinchi testni topshiring va bilimingizni sinang!`,
+        `"🎯 Interaktiv Quiz Testlar" bo‘limiga o‘tib, birinchi testni topshiring va bilimingizni sinang!`,
         { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
       ).catch(() => {});
     }
