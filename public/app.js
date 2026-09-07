@@ -1431,3 +1431,172 @@ function startExamCountdown() {
   setInterval(updateTimer, 1000);
 }
 
+// ----------------------------------------------------
+// POMODORO STUDY TIMER SYSTEM
+// ----------------------------------------------------
+let pomoSecondsLeft = 25 * 60; // 25 minutes
+let pomoInterval = null;
+let isPomoRunning = false;
+let currentPomoMode = 'work'; // 'work' | 'shortBreak' | 'longBreak'
+let pomoCompletedToday = 0;
+
+function openPomodoroModal() {
+  tg.HapticFeedback?.impactOccurred('medium');
+  const modal = document.getElementById('pomodoroModal');
+  if (modal) modal.classList.remove('hidden');
+  loadPomoStats();
+  updatePomoDisplay();
+}
+
+function closePomodoroModal() {
+  const modal = document.getElementById('pomodoroModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function setPomoMode(mode) {
+  tg.HapticFeedback?.impactOccurred('light');
+  if (isPomoRunning) pausePomoTimer();
+
+  currentPomoMode = mode;
+  const workBtn = document.getElementById('pomoBtnWork');
+  const shortBtn = document.getElementById('pomoBtnShort');
+  const longBtn = document.getElementById('pomoBtnLong');
+  const modeTitle = document.getElementById('pomoModeTitle');
+  const modeHint = document.getElementById('pomoHint');
+
+  // Reset button styles
+  [workBtn, shortBtn, longBtn].forEach(btn => {
+    if (btn) {
+      btn.className = 'py-2 rounded-lg text-slate-400 hover:text-white transition-all text-center';
+    }
+  });
+
+  if (mode === 'work') {
+    pomoSecondsLeft = 25 * 60;
+    if (workBtn) workBtn.className = 'py-2 rounded-lg bg-amber-500/30 text-amber-200 border border-amber-500/40 transition-all text-center font-bold';
+    if (modeTitle) modeTitle.textContent = "🧠 Dars Qilish Vaqti (Fokuslaning)";
+    if (modeHint) modeHint.textContent = "Chalg'imang! 25 daqiqa davomida faqat dars bilan shug'ullaning.";
+  } else if (mode === 'shortBreak') {
+    pomoSecondsLeft = 5 * 60;
+    if (shortBtn) shortBtn.className = 'py-2 rounded-lg bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 transition-all text-center font-bold';
+    if (modeTitle) modeTitle.textContent = "☕️ Qisqa Tanaffus (Dam Oling)";
+    if (modeHint) modeHint.textContent = "Suv iching va ko'zlaringizni 5 daqiqa dam oldiring.";
+  } else if (mode === 'longBreak') {
+    pomoSecondsLeft = 15 * 60;
+    if (longBtn) longBtn.className = 'py-2 rounded-lg bg-blue-500/30 text-blue-200 border border-blue-500/40 transition-all text-center font-bold';
+    if (modeTitle) modeTitle.textContent = "🌴 Uzun Tanaffus (Katta Dam Olish)";
+    if (modeHint) modeHint.textContent = "Ajoyib ish! 15 daqiqa to'liq hordiq chiqaring.";
+  }
+
+  updatePomoDisplay();
+}
+
+function togglePomoTimer() {
+  tg.HapticFeedback?.impactOccurred('medium');
+  if (isPomoRunning) {
+    pausePomoTimer();
+  } else {
+    startPomoTimer();
+  }
+}
+
+function startPomoTimer() {
+  if (isPomoRunning) return;
+  isPomoRunning = true;
+
+  const startBtn = document.getElementById('pomoStartBtn');
+  if (startBtn) {
+    startBtn.innerHTML = '⏸️ Tanaffus (Pause)';
+    startBtn.className = 'flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 font-extrabold rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 border border-amber-500/40';
+  }
+
+  pomoInterval = setInterval(() => {
+    pomoSecondsLeft--;
+    if (pomoSecondsLeft <= 0) {
+      clearInterval(pomoInterval);
+      pomoInterval = null;
+      isPomoRunning = false;
+      onPomoFinished();
+    } else {
+      updatePomoDisplay();
+    }
+  }, 1000);
+}
+
+function pausePomoTimer() {
+  if (pomoInterval) {
+    clearInterval(pomoInterval);
+    pomoInterval = null;
+  }
+  isPomoRunning = false;
+
+  const startBtn = document.getElementById('pomoStartBtn');
+  if (startBtn) {
+    startBtn.innerHTML = '▶️ Davom Etish';
+    startBtn.className = 'flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-amber-500/20';
+  }
+}
+
+function resetPomoTimer() {
+  tg.HapticFeedback?.impactOccurred('light');
+  pausePomoTimer();
+  setPomoMode(currentPomoMode);
+}
+
+function updatePomoDisplay() {
+  const display = document.getElementById('pomoTimerDisplay');
+  if (!display) return;
+
+  const mins = Math.floor(pomoSecondsLeft / 60);
+  const secs = pomoSecondsLeft % 60;
+  display.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function onPomoFinished() {
+  tg.HapticFeedback?.notificationOccurred('success');
+
+  const startBtn = document.getElementById('pomoStartBtn');
+  if (startBtn) {
+    startBtn.innerHTML = '▶️ Qayta Boshlash';
+    startBtn.className = 'flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95';
+  }
+
+  if (currentPomoMode === 'work') {
+    pomoCompletedToday++;
+    savePomoStats();
+    alert("🎉 Ajoyib! 25 daqiqalik Dars seansini muvaffaqiyatli yakunladingiz! Endi 5 daqiqa dam oling.");
+    setPomoMode('shortBreak');
+  } else {
+    alert("🔔 Tanaffus vaqti tugadi! Yangi Dars seansiga tayyormisiz?");
+    setPomoMode('work');
+  }
+}
+
+function loadPomoStats() {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const savedDate = localStorage.getItem('huquqchi_pomo_date');
+    if (savedDate === todayStr) {
+      pomoCompletedToday = parseInt(localStorage.getItem('huquqchi_pomo_count') || '0', 10);
+    } else {
+      pomoCompletedToday = 0;
+      localStorage.setItem('huquqchi_pomo_date', todayStr);
+      localStorage.setItem('huquqchi_pomo_count', '0');
+    }
+  } catch (e) {}
+
+  const countText = document.getElementById('pomoCountText');
+  if (countText) countText.textContent = String(pomoCompletedToday);
+}
+
+function savePomoStats() {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.setItem('huquqchi_pomo_date', todayStr);
+    localStorage.setItem('huquqchi_pomo_count', String(pomoCompletedToday));
+  } catch (e) {}
+
+  const countText = document.getElementById('pomoCountText');
+  if (countText) countText.textContent = String(pomoCompletedToday);
+}
+

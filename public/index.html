@@ -252,7 +252,23 @@
             <p class="text-[11px] text-slate-400">AI Xatarlarni & Jarimalarni aniqlash</p>
           </div>
 
-          <!-- 5. YURIDIK ATAMALAR FLASHCARDS -->
+          <!-- 5. POMODORO STUDY TIMER (O'QISH SANOG'I) -->
+          <div onclick="openPomodoroModal()" class="glass-card p-4 rounded-xl border border-amber-500/40 bg-amber-500/5 hover:border-amber-500 transition-all cursor-pointer group active:scale-95 col-span-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform font-bold">
+                ⏱️
+              </div>
+              <div class="flex-1">
+                <h4 class="font-bold text-sm text-white flex items-center justify-between">
+                  <span>Pomodoro Study-Timer</span>
+                  <span class="text-[9px] bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded font-mono font-bold">Fokus Sanog'i</span>
+                </h4>
+                <p class="text-[11px] text-slate-300">25 daqiqa dars + 5 daqiqa tanaffus bilan chalg'imasdan dars qilish</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. YURIDIK ATAMALAR FLASHCARDS -->
           <div onclick="openFlashcardsModal()" class="glass-card p-4 rounded-xl border border-purple-500/40 bg-purple-500/5 hover:border-purple-500 transition-all cursor-pointer group active:scale-95 col-span-2">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
@@ -833,6 +849,66 @@
     </div>
   </div>
 
+  <!-- POMODORO STUDY TIMER MODAL -->
+  <div id="pomodoroModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card-glow max-w-md w-full rounded-2xl p-5 border border-amber-500/40 relative space-y-4 shadow-2xl">
+      <button onclick="closePomodoroModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs hover:text-white">
+        ✕
+      </button>
+
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">⏱️</div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Pomodoro Study-Timer</h3>
+            <p class="text-[10px] text-amber-300 font-mono">Dars Vaqti va Fokus Sanog'i</p>
+          </div>
+        </div>
+        <span id="pomoSessionBadge" class="text-xs font-mono font-bold bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+          🔥 <span id="pomoCountText">0</span> ta bajarildi
+        </span>
+      </div>
+
+      <!-- Mode Selector Tabs -->
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-900/90 rounded-xl border border-slate-800 text-[11px] font-bold">
+        <button onclick="setPomoMode('work')" id="pomoBtnWork" class="py-2 rounded-lg bg-amber-500/30 text-amber-200 border border-amber-500/40 transition-all text-center">
+          🧠 25d Dars
+        </button>
+        <button onclick="setPomoMode('shortBreak')" id="pomoBtnShort" class="py-2 rounded-lg text-slate-400 hover:text-white transition-all text-center">
+          ☕️ 5d Tanaffus
+        </button>
+        <button onclick="setPomoMode('longBreak')" id="pomoBtnLong" class="py-2 rounded-lg text-slate-400 hover:text-white transition-all text-center">
+          🌴 15d Tanaffus
+        </button>
+      </div>
+
+      <!-- Big Timer Display -->
+      <div class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-6 text-center space-y-3 relative overflow-hidden">
+        <div class="text-[10px] text-amber-400 font-mono tracking-widest uppercase font-bold" id="pomoModeTitle">
+          🧠 Dars Qilish Vaqti (Fokuslaning)
+        </div>
+
+        <div id="pomoTimerDisplay" class="text-5xl font-extrabold text-amber-400 font-mono tracking-wider drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+          25:00
+        </div>
+
+        <p class="text-[11px] text-slate-400">
+          <span id="pomoHint">Chalg'imang! Taymer tugagach bildirishnoma beriladi.</span>
+        </p>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex items-center justify-between gap-3 pt-1">
+        <button onclick="resetPomoTimer()" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1 active:scale-95 border border-slate-700">
+          🔄 Reset
+        </button>
+        <button onclick="togglePomoTimer()" id="pomoStartBtn" class="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-amber-500/20">
+          ▶️ Boshlash
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAVIGATION BAR -->
   <nav class="fixed bottom-0 left-0 right-0 z-50 glass-card border-t border-slate-800/80 px-1 py-2 shadow-2xl">
     <div class="max-w-md mx-auto flex items-center justify-around">
@@ -870,6 +946,6 @@
   </nav>
 
   <!-- Dynamic JS Script -->
-  <script src="/app.js?v=202609076"></script>
+  <script src="/app.js?v=202609077"></script>
 </body>
 </html>
