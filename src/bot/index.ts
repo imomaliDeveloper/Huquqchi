@@ -58,6 +58,9 @@ import {
   handleAdminStartPollImportMenu,
   handleAdminSetImportCategory,
   handleAdminStopPollImport,
+  handleAdminManageQuizzes,
+  handleAdminDeleteQuizPrompt,
+  handleAdminDeleteQuizConfirm,
 } from '../handlers/adminQuizHandler';
 import {
   handleLegalServicesView,
@@ -158,8 +161,11 @@ export function setupBotHandlers() {
   bot.action(/^tb_art_(\d+)$/, (ctx) => handleTextbookDetails(ctx, parseInt(ctx.match[1]!, 10)));
   bot.action(/^dl_tb_(\d+)$/, (ctx) => handleDownloadTextbook(ctx, parseInt(ctx.match[1]!, 10)));
 
-  // Admin Quiz Creation actions
+  // Admin Quiz Creation & Management actions
   bot.action('admin_create_quiz', handleAdminCreateQuizStart);
+  bot.action('admin_manage_quizzes', handleAdminManageQuizzes);
+  bot.action(/^admin_del_quiz_(\d+)$/, (ctx) => handleAdminDeleteQuizPrompt(ctx, parseInt(ctx.match[1]!, 10)));
+  bot.action(/^admin_del_quiz_confirm_(\d+)$/, (ctx) => handleAdminDeleteQuizConfirm(ctx, parseInt(ctx.match[1]!, 10)));
   bot.action(/^admin_quiz_cat_(.+)$/, (ctx) => handleAdminQuizCategorySelect(ctx, ctx.match[1]!));
   bot.action(/^admin_ans_(A|B|C|D)$/, (ctx) => handleAdminCorrectAnswerSelect(ctx, ctx.match[1]!));
   bot.action('admin_skip_photo', handleAdminSkipPhoto);

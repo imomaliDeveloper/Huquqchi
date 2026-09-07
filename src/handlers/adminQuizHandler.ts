@@ -710,3 +710,107 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
   }
 }
 
+export async function handleAdminManageQuizzes(ctx: MyContext) {
+  const telegramId = ctx.from?.id;
+  if (!telegramId || !(await AdminService.isAdmin(telegramId))) {
+    return ctx.reply('⚠️ Siz admin emassiz!');
+  }
+
+  const quizzes = await prisma.quiz.findMany({
+    include: { _count: { select: { questions: true } } },
+    orderBy: { id: 'desc' },
+    take: 40,
+  });
+
+  if (quizzes.length === 0) {
+    const emptyKb = Markup.inlineKeyboard([[Markup.button.callback('🔙 Admin Panel', 'admin_home')]]);
+    return ctx.reply('📭 Hozircha birorta ham interaktiv quiz test mavjud emas.', { parse_mode: 'HTML', ...emptyKb });
+  }
+
+  let text = `📝 <b>MAVJUD QUIZ TESTLAR BAZASI (${quizzes.length} ta)</b>\n\n`;
+  text += `O‘chirmoqchi bo‘lgan testingiz yonidagi <b>"🗑 O‘chirish"</b> tugmasini bosing:\n\n`;
+
+  const buttons: any[][] = [];
+  for (const q of quizzes) {
+    const countLabel = q._count.questions > 0 ? `${q._count.questions} ta savol` : 'QuizBot Link';
+    buttons.push([
+      Markup.button.callback(`📝 ${q.title.slice(0, 20)}... (${countLabel})`, `quiz_start_${q.id}`),
+      Markup.button.callback(`🗑 O‘chirish`, `admin_del_quiz_${q.id}`),
+    ]);
+  }
+  buttons.push([Markup.button.callback('🔙 Admin Panelga Qaytish', 'admin_home')]);
+
+  const keyboard = Markup.inlineKeyboard(buttons);
+
+  if (ctx.callbackQuery) {
+    await ctx.answerCbQuery().catch(() => {});
+    return ctx.editMessageText(text, { parse_mode: 'HTML', ...keyboard }).catch(() => {});
+  }
+
+  return ctx.reply(text, { parse_mode: 'HTML', ...keyboard });
+}
+
+export async function handleAdminDeleteQuizPrompt(ctx: MyContext, quizId: number) {
+  const telegramId = ctx.from?.id;
+  if (!telegramId || !(await AdminService.isAdmin(telegramId))) {
+    return ctx.reply('⚠️ Siz admin emassiz!');
+  }
+
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    include: { _count: { select: { questions: true } } },
+  });
+
+  if (!quiz) {
+    return ctx.reply('⚠️ Quiz test topilmadi.');
+  }
+
+  let text = `⚠️ <b>TESTNI O‘CHIRISHNI TASDIQLANG!</b>\n\n`;
+  text += `📝 <b>Nomi:</b> ${escapeHTML(quiz.title)}\n`;
+  text += `📂 <b>Bo‘lim:</b> ${escapeHTML(quiz.category || 'Huquqiy Testlar')}\n`;
+  text += `📊 <b>Savollar:</b> ${quiz._count.questions} ta\n\n`;
+  text += `Ushbu test va unga biriktirilgan barcha savollar hamda natijalar bazadan butunlay o‘chiriladi.\n`;
+  text += `Rostdan ham o‘chirmoqchimisiz?`;
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🔴 Ha, Butunlay O‘chirilsin', `admin_del_quiz_confirm_${quiz.id}`)],
+    [Markup.button.callback(' Bekor qilish', 'admin_manage_quizzes')],
+  ]);
+
+  if (ctx.callbackQuery) {
+    await ctx.answerCbQuery().catch(() => {});
+    return ctx.editMessageText(text, { parse_mode: 'HTML', ...keyboard }).catch(() => {});
+  }
+
+  return ctx.reply(text, { parse_mode: 'HTML', ...keyboard });
+}
+
+export async function handleAdminDeleteQuizConfirm(ctx: MyContext, quizId: number) {
+  const telegramId = ctx.from?.id;
+  if (!telegramId || !(await AdminService.isAdmin(telegramId))) {
+    return ctx.reply('⚠️ Siz admin emassiz!');
+  }
+
+  const quiz = await prisma.quiz.findUnique({ where: { id: quizId } });
+  if (!quiz) {
+    return ctx.reply('⚠️ Test allaqachon o‘chirilgan yoki topilmadi.');
+  }
+
+  await prisma.quiz.delete({ where: { id: quizId } });
+
+  let text = `✅ <b>TEST MUVAFFAQIYATLI O‘CHIRILDI!</b>\n\n`;
+  text += `📝 <i>${escapeHTML(quiz.title)}</i> bazadan to‘liq o‘chirib tashlandi.`;
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('📝 Quiz Testlar Ro‘yxatiga Qaytish', 'admin_manage_quizzes')],
+    [Markup.button.callback('🔙 Admin Panel', 'admin_home')],
+  ]);
+
+  if (ctx.callbackQuery) {
+    await ctx.answerCbQuery('✅ Test o‘chirildi!').catch(() => {});
+    return ctx.editMessageText(text, { parse_mode: 'HTML', ...keyboard }).catch(() => {});
+  }
+
+  return ctx.reply(text, { parse_mode: 'HTML', ...keyboard });
+}
+

@@ -3,6 +3,7 @@ import prisma from '../database/prisma';
 import { Markup } from 'telegraf';
 import { escapeHTML, sanitizeExternalAds } from '../utils/helpers';
 import UI from '../utils/ui';
+import AdminService from '../services/adminService';
 import { seedDtmMockExam, seedSchoolTextbookQuizzes } from '../data/dtmMockExamData';
 
 export async function handleQuizView(ctx: MyContext) {
@@ -344,11 +345,16 @@ export async function handleQuizStart(ctx: MyContext, quizId: number) {
         const cleanTitle = sanitizeExternalAds(quiz.title);
         const cleanDesc = sanitizeExternalAds(quiz.description || '');
 
-        const buttons = [
+        const buttons: any[][] = [
           [Markup.button.url('🚀 QuizBot Testini Boshlash', quizLink)],
           [Markup.button.url('📢 @Huquq_study Kanalimiz', 'https://t.me/Huquq_study')],
-          [Markup.button.callback('🔙 Testlar Ro‘yxatiga Qaytish', 'quiz_interactive_home')],
         ];
+
+        if (ctx.from && (await AdminService.isAdmin(ctx.from.id))) {
+          buttons.push([Markup.button.callback('🗑 Testni O‘chirish (Admin)', `admin_del_quiz_${quiz.id}`)]);
+        }
+
+        buttons.push([Markup.button.callback('🔙 Testlar Ro‘yxatiga Qaytish', 'quiz_interactive_home')]);
 
         const text =
           `🎲 <b>${escapeHTML(cleanTitle)}</b>\n\n` +
