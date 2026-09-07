@@ -426,16 +426,33 @@ export async function handleAdminBroadcastExecute(ctx: MyContext) {
 
   const statusMsg = await ctx.reply("🚀 <i>E'lon barcha foydalanuvchilarga yuborilmoqda...</i>", { parse_mode: 'HTML' });
 
-  const allUsers = await prisma.user.findMany({ select: { telegramId: true } });
+  const allUsers = await prisma.user.findMany({ select: { id: true, telegramId: true } });
   let successCount = 0;
   let failCount = 0;
+  let deletedCount = 0;
 
   for (const u of allUsers) {
     try {
       await ctx.telegram.copyMessage(u.telegramId.toString(), ctx.chat.id, ctx.message.message_id);
       successCount++;
-    } catch (err) {
+    } catch (err: any) {
       failCount++;
+      const errStr = String(err?.message || err?.description || err).toLowerCase();
+      // Auto-delete blocked, deactivated, or missing users from DB so they don't clog future broadcasts
+      if (
+        errStr.includes('blocked') ||
+        errStr.includes('deactivated') ||
+        errStr.includes('chat not found') ||
+        errStr.includes('kicked') ||
+        err?.response?.error_code === 403
+      ) {
+        try {
+          await prisma.user.delete({ where: { id: u.id } });
+          deletedCount++;
+        } catch (delErr) {
+          console.warn(`Failed to delete blocked user ${u.id}:`, delErr);
+        }
+      }
     }
 
     if (allUsers.length > 20) {
@@ -447,10 +464,13 @@ export async function handleAdminBroadcastExecute(ctx: MyContext) {
 
   const buttons = [[Markup.button.callback('🔙 Admin Panelga Qaytish', 'admin_home')]];
 
-  return ctx.reply(
-    `✅ <b>E'lon tarqatish yakunlandi!</b>\n\n` +
+  let summaryText = `✅ <b>E'lon tarqatish yakunlandi!</b>\n\n` +
     `📬 Muvaffaqiyatli yetkazildi: <b>${successCount} ta</b>\n` +
-    `❌ Yetkazilmadi (bloklangan/o'chirilgan): <b>${failCount} ta</b>`,
-    { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
-  );
+    `❌ Yetkazilmadi (bloklangan/o'chirilgan): <b>${failCount} ta</b>`;
+
+  if (deletedCount > 0) {
+    summaryText += `\n🗑 <b>Bazadan avtomatik o‘chirildi:</b> <b>${deletedCount} ta</b> (botni bloklaganlar)`;
+  }
+
+  return ctx.reply(summaryText, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
 }
