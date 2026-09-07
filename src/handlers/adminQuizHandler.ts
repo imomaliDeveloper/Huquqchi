@@ -410,30 +410,7 @@ function extractUrlsFromMessage(ctx: MyContext): string[] {
   const msg = ctx.message;
   if (!msg) return urls;
 
-  const text = 'text' in msg ? msg.text : ('caption' in msg ? msg.caption : '');
-  if (text) {
-    const matches = text.match(/https?:\/\/[^\s\n<>()"]+/g);
-    if (matches) {
-      for (const m of matches) {
-        if (!urls.includes(m)) urls.push(m);
-      }
-    }
-  }
-
-  // Check entities
-  const entities = 'entities' in msg ? msg.entities : ('caption_entities' in msg ? (msg as any).caption_entities : []);
-  if (Array.isArray(entities)) {
-    for (const ent of entities) {
-      if (ent.type === 'url' && text) {
-        const u = text.substring(ent.offset, ent.offset + ent.length);
-        if (u && !urls.includes(u)) urls.push(u);
-      } else if (ent.type === 'text_link' && ent.url) {
-        if (!urls.includes(ent.url)) urls.push(ent.url);
-      }
-    }
-  }
-
-  // Check inline_keyboard buttons
+  // 1. Check inline_keyboard buttons FIRST (QuizBot share posts put the start link in inline buttons!)
   if ((msg as any).reply_markup?.inline_keyboard) {
     for (const row of (msg as any).reply_markup.inline_keyboard) {
       for (const btn of row) {
@@ -443,6 +420,39 @@ function extractUrlsFromMessage(ctx: MyContext): string[] {
       }
     }
   }
+
+  // 2. Check entities (text_link & url)
+  const text = 'text' in msg ? msg.text : ('caption' in msg ? msg.caption : '');
+  const entities = 'entities' in msg ? msg.entities : ('caption_entities' in msg ? (msg as any).caption_entities : []);
+  if (Array.isArray(entities)) {
+    for (const ent of entities) {
+      if (ent.type === 'text_link' && ent.url) {
+        if (!urls.includes(ent.url)) urls.push(ent.url);
+      } else if (ent.type === 'url' && text) {
+        const u = text.substring(ent.offset, ent.offset + ent.length);
+        if (u && !urls.includes(u)) urls.push(u);
+      }
+    }
+  }
+
+  // 3. Regex match text
+  if (text) {
+    const matches = text.match(/https?:\/\/[^\s\n<>()"]+/g);
+    if (matches) {
+      for (const m of matches) {
+        if (!urls.includes(m)) urls.push(m);
+      }
+    }
+  }
+
+  // Prioritize URLs containing 'quizbot' or 'QuizBot' or 'start='
+  urls.sort((a, b) => {
+    const aIsQuizBot = /quizbot|\?start=/i.test(a);
+    const bIsQuizBot = /quizbot|\?start=/i.test(b);
+    if (aIsQuizBot && !bIsQuizBot) return -1;
+    if (!aIsQuizBot && bIsQuizBot) return 1;
+    return 0;
+  });
 
   return urls;
 }
@@ -481,6 +491,16 @@ function extractQuizTitle(text: string): string {
   return 'Huquqiy Quiz Test';
 }
 
+function getCategoryDefaultQuizTitle(categoryName: string): string {
+  if (categoryName.includes('8-sinf')) return '📘 8-sinf Huquq Darslik Testlari';
+  if (categoryName.includes('9-sinf')) return '📗 9-sinf Huquq Darslik Testlari';
+  if (categoryName.includes('10-sinf')) return '📙 10-sinf Huquq Darslik Testlari';
+  if (categoryName.includes('11-sinf')) return '📕 11-sinf Huquq Darslik Testlari';
+  if (categoryName.includes('DTM')) return '🎯 DTM 2026 Rasmiy Imtihon Simulatsiyasi (30 ta savol)';
+  if (categoryName.includes('Milliy')) return '📜 Milliy Sertifikat Huquqshunoslik Testlari';
+  return `${categoryName} Darslik Testlari`;
+}
+
 export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
   if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return false;
 
@@ -511,7 +531,7 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
     const explanation = poll.explanation || null;
 
     try {
-      const quizTitle = `${categoryName} Darslik Testlari`;
+      const quizTitle = getCategoryDefaultQuizTitle(categoryName);
       let quiz = await prisma.quiz.findFirst({ where: { title: quizTitle } });
 
       if (!quiz) {
@@ -542,7 +562,8 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
 
       await ctx.reply(
         `✅ <b>POLL SAVOL BAZAGA SAQLANDI! (#${totalCount})</b>\n\n` +
-        `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
+        `📌 <b>Test:</b> ${escapeHTML(quizTitle)}\n` +
+        `📂 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
         `❓ <b>Savol:</b> ${escapeHTML(question.slice(0, 300))}\n` +
         `🅰️ ${escapeHTML(optionA)}\n` +
         `🅱️ ${escapeHTML(optionB)}\n` +
@@ -634,7 +655,7 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
     const question = questionLines.join(' ') || msgText;
 
     try {
-      const quizTitle = `${categoryName} Darslik Testlari`;
+      const quizTitle = getCategoryDefaultQuizTitle(categoryName);
       let quiz = await prisma.quiz.findFirst({ where: { title: quizTitle } });
 
       if (!quiz) {
@@ -665,7 +686,8 @@ export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
 
       await ctx.reply(
         `✅ <b>SAVOL BAZAGA SAQLANDI! (#${totalCount})</b>\n\n` +
-        `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
+        `📌 <b>Test:</b> ${escapeHTML(quizTitle)}\n` +
+        `📂 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
         `❓ <b>Savol:</b> ${escapeHTML(question.slice(0, 300))}\n` +
         `🅰️ ${escapeHTML(optionA)}\n` +
         `🅱️ ${escapeHTML(optionB)}\n` +

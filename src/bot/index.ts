@@ -17,6 +17,7 @@ import {
 import {
   handleQuizView,
   handleInteractiveQuizView,
+  handleInteractiveQuizCategory,
   handlePdfQuizHome,
   handlePdfQuizCategory,
   handleDownloadPdfQuiz,
@@ -210,6 +211,7 @@ export function setupBotHandlers() {
   // Quiz navigation actions
   bot.action('back_to_quizzes', handleQuizView);
   bot.action('quiz_interactive_home', handleInteractiveQuizView);
+  bot.action(/^quiz_cat_select_(.+)$/, (ctx) => handleInteractiveQuizCategory(ctx, ctx.match[1]!));
   bot.action('quiz_pdf_home', handlePdfQuizHome);
   bot.action(/^quiz_pdf_cat_(\d+)$/, (ctx) => handlePdfQuizCategory(ctx, parseInt(ctx.match[1]!, 10)));
   bot.action(/^quiz_pdf_dl_(\d+)$/, (ctx) => handleDownloadPdfQuiz(ctx, parseInt(ctx.match[1]!, 10)));

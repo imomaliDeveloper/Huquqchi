@@ -41,14 +41,60 @@ export async function handleInteractiveQuizView(ctx: MyContext) {
     await seedDtmMockExam();
     await seedSchoolTextbookQuizzes();
 
+    const buttons = [
+      [Markup.button.callback('📘 8-sinf Huquq Darslik Testlari', 'quiz_cat_select_8-sinf Huquq')],
+      [Markup.button.callback('📗 9-sinf Huquq Darslik Testlari', 'quiz_cat_select_9-sinf Huquq')],
+      [Markup.button.callback('📙 10-sinf Huquq Darslik Testlari', 'quiz_cat_select_10-sinf Huquq')],
+      [Markup.button.callback('📕 11-sinf Huquq Darslik Testlari', 'quiz_cat_select_11-sinf Huquq')],
+      [Markup.button.callback('🎯 DTM 2026 Imtihon Testlari', 'quiz_cat_select_DTM Imtihon Testlari')],
+      [Markup.button.callback('📜 Milliy Sertifikat Testlari', 'quiz_cat_select_Milliy Sertifikat Testlari')],
+      [Markup.button.callback('📋 Barcha Interaktiv Testlar', 'quiz_cat_select_ALL')],
+      [Markup.button.callback('🔙 Testlar Markaziga Qaytish', 'back_to_quizzes')],
+    ];
+
+    const text =
+      `🎯 ${UI.header('INTERAKTIV ONLAYN TESTLAR', '📝')}\n\n` +
+      `Bilimingizni sinash va imtihonlarga tayyorlanish uchun kerakli darslik yoki imtihon bo‘limini tanlang:\n\n` +
+      `${UI.DIVIDER}`;
+
+    if (ctx.callbackQuery) {
+      return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }).catch(() => {
+        return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
+      });
+    }
+
+    return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
+  } catch (error) {
+    console.error('Error in handleInteractiveQuizView:', error);
+    return ctx.reply('⚠️ Interaktiv testlarni yuklashda xatolik yuz berdi.');
+  }
+}
+
+export async function handleInteractiveQuizCategory(ctx: MyContext, categoryName: string) {
+  await ctx.answerCbQuery().catch(() => {});
+  try {
+    let whereClause: any = {};
+    if (categoryName !== 'ALL') {
+      whereClause = {
+        OR: [
+          { category: categoryName },
+          { title: { contains: categoryName } },
+          { description: { contains: categoryName } },
+        ],
+      };
+    }
+
     const quizzes = await prisma.quiz.findMany({
+      where: whereClause,
       include: { _count: { select: { questions: true } } },
       orderBy: { id: 'asc' },
     });
 
     if (quizzes.length === 0) {
-      const emptyButtons = [[Markup.button.callback('🔙 Testlar Markaziga Qaytish', 'back_to_quizzes')]];
-      const msg = `📝 <b>INTERAKTIV ONLAYN TESTLAR</b>\n\nHozirda faol interaktiv testlar yuklanmoqda. Bir ozdan so‘ng qayta kirib ko‘ring!`;
+      const emptyButtons = [[Markup.button.callback('🔙 Bo‘limlarga Qaytish', 'quiz_interactive_home')]];
+      const msg =
+        `📂 <b>${escapeHTML(categoryName).toUpperCase()} TESTLARI</b>\n\n` +
+        `<i>Hozircha ushbu bo‘limda testlar mavjud emas. Admin tomonidan tez orada yuklanadi!</i>`;
       return ctx.editMessageText(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(emptyButtons) }).catch(() => {});
     }
 
@@ -59,24 +105,30 @@ export async function handleInteractiveQuizView(ctx: MyContext) {
         if (m) countText = `${m[1]} ta savol`;
         else if (quiz.description.includes('http')) countText = 'QuizBot Link';
       }
+      const prefix = quiz._count.questions > 0 ? '📝' : '🎲';
       return [
-        Markup.button.callback(`📝 ${quiz.title} (${countText})`, `quiz_start_${quiz.id}`),
+        Markup.button.callback(`${prefix} ${quiz.title} (${countText})`, `quiz_start_${quiz.id}`),
       ];
     });
 
-    buttons.push([Markup.button.callback('🔙 Testlar Markaziga Qaytish', 'back_to_quizzes')]);
+    buttons.push([Markup.button.callback('🔙 Bo‘limlarga Qaytish', 'quiz_interactive_home')]);
 
     const text =
-      `🎯 ${UI.header('INTERAKTIV ONLAYN TESTLAR', '📝')}\n\n` +
-      `Bilimingizni sinash va qonunchilikni mustahkamlash uchun kerakli testni tanlang:\n\n` +
+      `📂 <b>${escapeHTML(categoryName).toUpperCase()} BO'LIMI TESTLARI</b>\n` +
+      `${UI.THIN_DIVIDER}\n` +
+      `Ishlamoqchi bo‘lgan testingizni tanlang:\n\n` +
       `${UI.DIVIDER}`;
 
-    return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }).catch(() => {
-      return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
-    });
+    if (ctx.callbackQuery) {
+      return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }).catch(() => {
+        return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
+      });
+    }
+
+    return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
   } catch (error) {
-    console.error('Error fetching interactive quizzes:', error);
-    return ctx.reply('⚠️ Interaktiv testlarni yuklashda xatolik yuz berdi.');
+    console.error('Error fetching interactive quiz category:', error);
+    return ctx.reply('⚠️ Testlarni yuklashda xatolik yuz berdi.');
   }
 }
 
