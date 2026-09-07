@@ -11,7 +11,11 @@ export interface DocTemplateParams {
     | 'ISHONCHNOMA'
     | 'OLDI_SOTDI_SHARTNOMASI'
     | 'NIKOH_SHARTNOMASI'
-    | 'XIZMAT_KORSATISH_SHARTNOMASI';
+    | 'XIZMAT_KORSATISH_SHARTNOMASI'
+    | 'AKADEMIK_TATIL_ARIZASI'
+    | 'PEREVOD_ARIZASI'
+    | 'YOTOQXONA_ARIZASI'
+    | 'TALIM_KREDITI_KAFILLIK';
   docNumber?: string;
   partyA: {
     name: string;
@@ -93,6 +97,18 @@ export class DocGeneratorService {
             break;
           case 'XIZMAT_KORSATISH_SHARTNOMASI':
             this.buildXizmatContent(doc, params);
+            break;
+          case 'AKADEMIK_TATIL_ARIZASI':
+            this.buildAkademikTatilContent(doc, params);
+            break;
+          case 'PEREVOD_ARIZASI':
+            this.buildPerevodContent(doc, params);
+            break;
+          case 'YOTOQXONA_ARIZASI':
+            this.buildYotoqxonaContent(doc, params);
+            break;
+          case 'TALIM_KREDITI_KAFILLIK':
+            this.buildTalimKreditiContent(doc, params);
             break;
         }
 
@@ -355,6 +371,80 @@ export class DocGeneratorService {
       `1.1. Ijrochi Buyurtmachining topshirig‘iga ko‘ra ${params.details.subjectAddressOrTitle || 'xizmatlar'}ni ko‘rsatish, Buyurtmachi esa ushbu xizmatlar haqini to‘lash majburiyatini oladi.\n` +
       `1.2. Xizmat haqi summasi: ${params.details.amountOrPrice || 'Kelishilgan'} so‘m etib belgilanadi.\n` +
       `1.3. Xizmat ko‘rsatish muddatlari: ${params.details.durationOrDate || 'Belgilangan muddatgacha'}.`
+    );
+  }
+
+  private static buildAkademikTatilContent(doc: PDFKit.PDFDocument, params: DocTemplateParams) {
+    doc.fillColor('#0F172A').fontSize(14).text('AKADEMIK TA’TIL BERISH HAQIDA ARIZA', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#1E293B');
+    doc.text(`Kimgiz: ${params.partyB.name} OTM Rektoriga`, { align: 'right' });
+    doc.text(`Kimdan: ${params.partyA.name} (Talaba/Abituriyent)`, { align: 'right' });
+    if (params.partyA.passport) doc.text(`Pasport: ${params.partyA.passport}`, { align: 'right' });
+    doc.moveDown(1.5);
+
+    doc.fillColor('#0F172A').fontSize(12).text('ARIZA', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#334155').text(
+      `Menga ${params.details.additionalInfo || 'salomatlik holatim / harbiy xizmat / oilaviy sharoitim'} sababli O‘zbekiston Respublikasi Oliy va o‘rta maxsus ta’lim vazirligining amaldagi Nizomiga muvofiq ${params.details.durationOrDate || '1 (bir) o‘quv yili'} muddatga akademik ta’til berishingizni so‘rayman.\n\n` +
+      `Tegishli tasdiqlovchi tibbiy / rasmiy hujjatlar ilova qilinadi.`
+    );
+  }
+
+  private static buildPerevodContent(doc: PDFKit.PDFDocument, params: DocTemplateParams) {
+    doc.fillColor('#0F172A').fontSize(14).text('O‘QISHNI KO‘CHIRISH (PEREVOD) HAQIDA ARIZA', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#1E293B');
+    doc.text(`Kimgiz: ${params.partyB.name} OTM Rektoriga`, { align: 'right' });
+    doc.text(`Kimdan: ${params.partyA.name} (Talaba)`, { align: 'right' });
+    doc.moveDown(1.5);
+
+    doc.fillColor('#0F172A').fontSize(12).text('ARIZA', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#334155').text(
+      `Mening hozirgi o‘qiyotgan OTMimdan ${params.details.subjectAddressOrTitle || 'Manzil/OTM nomi'} yo‘nalishiga o‘qishimni ko‘chirishga (perevod qilishga) ruxsat berishingizni so‘rayman.\n\n` +
+      `Ko‘chirish sababi: ${params.details.additionalInfo || 'Doimiy yashash joyi o‘zgarganligi va oilaviy sharoit'}.\n` +
+      `Reyting daftarchasi hamda akademik ma’lumotnoma ilova qilinadi.`
+    );
+  }
+
+  private static buildYotoqxonaContent(doc: PDFKit.PDFDocument, params: DocTemplateParams) {
+    doc.fillColor('#0F172A').fontSize(14).text('TALABALAR TURAR JOYI (YOTOQXONA) UCHUN ARIZA', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#1E293B');
+    doc.text(`Kimgiz: OTM Rektorati va Yotoqxona Komissiyasiga`, { align: 'right' });
+    doc.text(`Kimdan: ${params.partyA.name} (Talaba)`, { align: 'right' });
+    if (params.partyA.phone) doc.text(`Tel: ${params.partyA.phone}`, { align: 'right' });
+    doc.moveDown(1.5);
+
+    doc.fillColor('#0F172A').fontSize(12).text('ARIZA', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#334155').text(
+      `Mening doimiy yashash joyim ${params.partyA.address || 'viloyat/tuman'}da joylashganligi hamda uzoq masofadan qatnab o‘qish imkoniyati yo‘qligi sababli, 2025/2026 o‘quv yili uchun OTM Talabalar turar joyidan (yotoqxonadan) joy ajratishingizni so‘rayman.\n\n` +
+      `Ijtimoiy imtiyoz / holat: ${params.details.additionalInfo || 'Uzoq hudud talabasi'}.`
+    );
+  }
+
+  private static buildTalimKreditiContent(doc: PDFKit.PDFDocument, params: DocTemplateParams) {
+    doc.fillColor('#0F172A').fontSize(14).text('TA’LIM KREDITI BO‘YICHA KAFILLIK SHABLONI', { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(10).fillColor('#1E293B');
+    doc.text(
+      `Kafil: ${params.partyA.name} (Pasport: ${params.partyA.passport || 'AA0000000'}) hamda Qarz oluvchi talaba: ${params.partyB.name} ushbu kafillik majburiyatini tuzdilar:`
+    );
+    doc.moveDown(1);
+
+    doc.fontSize(11).fillColor('#0F172A').text('1. KAFILLIK MAJBURIYATI');
+    doc.fontSize(10).fillColor('#334155').text(
+      `1.1. Kafil ${params.partyA.name} tijorat bankidan Talaba ${params.partyB.name} foydasiga ajratiladigan ${params.details.amountOrPrice || 'kontrakt summasi'} miqdoridagi ta’lim krediti va uning foizlari o‘z vaqtida qaytarilishi bo‘yicha bank oldida to‘liq sherikchilik javobgarligini o‘z zimmasiga oladi.\n` +
+      `1.2. Ushbu kafillik xati kredit shartnomasi muddati yakunlangunga qadar amalda bo‘ladi.`
     );
   }
 }

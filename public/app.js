@@ -458,6 +458,64 @@ const FULL_QUIZ_BANK = [
   }
 ];
 
+const CASES_QUIZ_BANK = [
+  {
+    question: "17 yoshli Rustam ota-onasining roziligisiz o‘ziga tegishli qimmatbaho telefonni sotyapti. Xaridor pulni berdi. Buni bilgan ota-ona bitimni bekor qilishni talab qilmoqda. O'zR Fuqarolik Kodeksiga muvofiq ushbu bitim taqdiri nima bo'ladi?",
+    options: [
+      "A) Bitim ota-onaning roziligisiz tuzilgani uchun sud orqali haqiqiy emas deb topilishi mumkin",
+      "B) Rustam 16 yoshdan oshgani uchun bitim to'liq o'z kuchida qoladi",
+      "C) Xaridor telefonni qaytarishga majbur emas",
+      "D) Faqat IIB aralashuvi bilan bekor qilinadi"
+    ],
+    correct: 0,
+    explanation: "O'zR FK 27-moddasi: 14 yoshdan 18 yoshgacha bo'lgan voyaga yetmaganlar bitimlarni ota-onalari yoki vasiylarining yozma roziligi bilan tuzadilar. Aks holda bitim shubhali hisoblanadi va bekor qilinishi mumkin."
+  },
+  {
+    question: "20 yoshli xodim Sardor ish beruvchini ogohlantirmasdan va ariza yozmasdan 5 kun ishga chiqmadi. Ish beruvchi uni Mehnat kodeksiga ko'ra qaysi modda bilan ishdan bo'shatishi mumkin?",
+    options: [
+      "A) Mehnat intizomini qo'pol ravishda buzganligi uchun (MK 161-modda)",
+      "B) Xodimni ishdan bo'shatish taqiqlanadi",
+      "C) Faqat ma'muriy jarima qo'llaniladi",
+      "D) Xodim o'z xohishiga ko'ra ketgan hisoblanadi"
+    ],
+    correct: 0,
+    explanation: "O'zR Mehnat Kodeksining 161-moddasiga muvofiq, xodimning usursiz sabablarga ko'ra ishda bo'lmasligi mehnat majburiyatlarini qo'pol ravishda buzish hisoblanadi va ish beruvchi tashabbusi bilan bekor qilinadi."
+  },
+  {
+    question: "Fuqaro Aziz va Olim o'rtasida 1 yillik uy-joy ijara shartnomasi og'zaki tuzildi va notariusda tasdiqlanmadi hamda soliq organida ro'yxatdan o'tkazilmadi. Nizoda ushbu bitim qanday baholanadi?",
+    options: [
+      "A) Qonunchilikka ko'ra ijara shartnomasi yozma tuzilishi va soliqda ro'yxatdan o'tkazilishi shart, aks holda bitim qonuniy kuchga ega emas",
+      "B) Og'zaki bitim bo'lsa ham to'liq qonuniy kuchga ega",
+      "C) Guvohlar bo'lsa kifoya",
+      "D) Faqat shahar hokimiyati tasdiqlaydi"
+    ],
+    correct: 0,
+    explanation: "O'zR Fuqarolik Kodeksining 600-moddasi va Soliq kodeksiga ko'ra turar joy ijara shartnomasi yozma shaklda tuzilishi va ijara.soliq.uz da hisobga qo'yilishi shart."
+  },
+  {
+    question: "Akmal do'sti Nodirga 50,000,000 so'm qarz berdi va u notariusda tasdiqlanmasdan, oddiy yozma tilxat (qo'lxat) tuzildi. Sudda ushbu tilxat delil sifatida o'tadimi?",
+    options: [
+      "A) Ha, oddiy yozma tildagi tilxat qarz mavjudligini isbotlovchi to'liq yuridik dalil hisoblanadi",
+      "B) Yo'q, notariusda tasdiqlanmagan tilxat o'tmaydi",
+      "C) Faqat guvohlar kelib tasdiqlasa o'tadi",
+      "D) BHMning 10 baravaridan oshsa mutlaqo o'tmaydi"
+    ],
+    correct: 0,
+    explanation: "O'zR FK 733-moddasi: Fuqarolar o'rtasidagi qarz shartnomasi BHMning 10 baravaridan oshsa yozma tuzilishi shart. Tilxat yozma shakl talabiga javob beradi va notarial tasdiqlash shart emas."
+  },
+  {
+    question: "16 yoshli o'quvchi Jasur darsdan bo'sh vaqtida kafega ishga kirdi. Ish beruvchi unga kuniga 10 soatlik ish smenasi belgiladi. Ushbu buyruq qonuniy bormi?",
+    options: [
+      "A) Noto'g'ri, MK 416-moddasiga ko'ra 16-18 yoshli o'smirlar uchun kunlik ish smenasi 7 soat 30 daqiqadan oshmasligi kerak",
+      "B) Ha, xodim rozi bo'lsa qonuniy",
+      "C) Faqat tungi vaqtda ishlasa taqiqlanadi",
+      "D) Haftasiga 60 soatgacha ruxsat beriladi"
+    ],
+    correct: 0,
+    explanation: "O'zR Mehnat Kodeksining 416-moddasiga muvofiq 16 yoshdan 18 yoshgacha bo'lgan o'smirlar uchun kunlik ish vaqti 7 soat 30 daqiqadan oshishi mumkin emas."
+  }
+];
+
 let quizData = [];
 let currentQuizIdx = 0;
 let score = 0;
@@ -465,7 +523,7 @@ let userAnswers = [];
 let quizTimerInterval = null;
 let remainingSeconds = 0;
 let totalExamTimeSeconds = 0;
-let quizMode = 'quick'; // 'quick' | 'full'
+let quizMode = 'quick'; // 'quick' | 'full' | 'cases'
 
 function setupQuizEngine() {
   if (quizTimerInterval) clearInterval(quizTimerInterval);
@@ -481,42 +539,56 @@ function shuffleArray(array) {
   return arr;
 }
 
+function openOtmModal() {
+  tg.HapticFeedback?.impactOccurred('medium');
+  const modal = document.getElementById('otmModal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeOtmModal() {
+  const modal = document.getElementById('otmModal');
+  if (modal) modal.classList.add('hidden');
+}
+
 async function startQuizMode(mode) {
   tg.HapticFeedback?.impactOccurred('heavy');
   quizMode = mode;
 
   const btnQuick = document.getElementById('modeBtnQuick');
   const btnFull = document.getElementById('modeBtnFull');
+  const btnCases = document.getElementById('modeBtnCases');
 
-  if (btnQuick && btnFull) {
-    if (mode === 'quick') {
-      btnQuick.className = 'flex-1 py-2 px-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1';
-      btnFull.className = 'flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1';
-    } else {
-      btnFull.className = 'flex-1 py-2 px-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1';
-      btnQuick.className = 'flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1';
-    }
+  const activeClass = 'flex-1 py-2 px-2 bg-purple-600 text-white rounded-xl text-[11px] font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1';
+  const inactiveClass = 'flex-1 py-2 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[11px] font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1';
+
+  if (btnQuick && btnFull && btnCases) {
+    btnQuick.className = mode === 'quick' ? activeClass : inactiveClass;
+    btnFull.className = mode === 'full' ? activeClass : inactiveClass;
+    btnCases.className = mode === 'cases' ? activeClass : inactiveClass;
   }
 
-  let pool = [...FULL_QUIZ_BANK];
-
-  // Try loading dynamic questions from database
-  try {
-    const res = await fetch('/api/quiz/questions');
-    const dbQuestions = await res.json();
-    if (Array.isArray(dbQuestions) && dbQuestions.length > 0) {
-      pool = [...dbQuestions, ...FULL_QUIZ_BANK];
-    }
-  } catch (e) {}
-
-  pool = shuffleArray(pool);
-
-  if (mode === 'quick') {
-    quizData = pool.slice(0, 5);
-    remainingSeconds = 5 * 45; // 3 min 45 sec
+  if (mode === 'cases') {
+    quizData = shuffleArray([...CASES_QUIZ_BANK]);
+    remainingSeconds = 5 * 60; // 5 min
   } else {
-    quizData = pool.slice(0, 10);
-    remainingSeconds = 15 * 60; // 15 min
+    let pool = [...FULL_QUIZ_BANK];
+    try {
+      const res = await fetch('/api/quiz/questions');
+      const dbQuestions = await res.json();
+      if (Array.isArray(dbQuestions) && dbQuestions.length > 0) {
+        pool = [...dbQuestions, ...FULL_QUIZ_BANK];
+      }
+    } catch (e) {}
+
+    pool = shuffleArray(pool);
+
+    if (mode === 'quick') {
+      quizData = pool.slice(0, 5);
+      remainingSeconds = 5 * 45; // 3 min 45 sec
+    } else {
+      quizData = pool.slice(0, 10);
+      remainingSeconds = 15 * 60; // 15 min
+    }
   }
 
   totalExamTimeSeconds = remainingSeconds;

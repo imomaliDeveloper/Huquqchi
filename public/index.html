@@ -238,6 +238,21 @@
               </div>
             </div>
           </div>
+
+          <!-- 6. YURIDIK OTMLAR VA DTM YO'RIQNOMASI (RASMIY HAVOLALAR) -->
+          <div onclick="openOtmModal()" class="glass-card p-4 rounded-xl border border-blue-500/40 bg-blue-500/5 hover:border-blue-500 transition-all cursor-pointer group active:scale-95 col-span-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                <i class="fa-solid fa-university"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                  Yuridik OTMlar va DTM Yo‘riqnomasi <span class="text-[9px] bg-blue-500/30 text-blue-300 px-2 py-0.5 rounded font-mono">Rasmiy Linklar</span>
+                </h4>
+                <p class="text-[11px] text-slate-300">TDYU, O‘zMU, JIDU va DTM Rasmiy qabul portallari to‘g‘ridan-to‘g‘ri havolalari</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -371,12 +386,15 @@
         <!-- Active Quiz Box -->
         <div id="quizBox" class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
           <!-- Top Mode Selector Tabs -->
-          <div class="flex items-center gap-2 mb-4">
-            <button onclick="startQuizMode('quick')" id="modeBtnQuick" class="flex-1 py-2 px-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1">
-              ⚡️ Tezkor (5 savol)
+          <div class="flex items-center gap-1.5 mb-4">
+            <button onclick="startQuizMode('quick')" id="modeBtnQuick" class="flex-1 py-2 px-2 bg-purple-600 text-white rounded-xl text-[11px] font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1">
+              ⚡️ Tezkor (5)
             </button>
-            <button onclick="startQuizMode('full')" id="modeBtnFull" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1">
-              🎓 To'liq (10 savol)
+            <button onclick="startQuizMode('full')" id="modeBtnFull" class="flex-1 py-2 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[11px] font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1">
+              🎓 Imtihon (10)
+            </button>
+            <button onclick="startQuizMode('cases')" id="modeBtnCases" class="flex-1 py-2 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[11px] font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1">
+              ⚖️ Kazuslar (5)
             </button>
           </div>
 
@@ -468,21 +486,29 @@
           <i class="fa-solid fa-file-signature text-indigo-400"></i> PDF Hujjat Generatori
         </h3>
         <p class="text-xs text-slate-400 mb-4">
-          Rasmiy shartnoma va arizalarni avtomatlashtirilgan PDF shaklida yuklab oling.
+          Rasmiy shartnoma va arizalarni avtomatlashtirilgan PDF shaklida yuklab oling. (Kunlik limit: 2 ta Bepul PDF).
         </p>
 
         <form id="docForm" class="space-y-3">
           <div>
             <label class="block text-[11px] font-semibold text-slate-300 mb-1">Hujjat Turini Tanlang</label>
             <select id="docTypeSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-              <option value="IJARA_SHARTNOMASI">🏠 Uy-Joy Ijara Shartnomasi</option>
-              <option value="QARZ_TILI_XATI">💰 Qarz va Tilxat Hujjati</option>
-              <option value="MEHNAT_SHARTNOMASI">💼 Mehnat Shartnomasi</option>
-              <option value="DAVO_ARIZASI">⚖️ Sudga Da'vo Arizasi</option>
-              <option value="ISHONCHNOMA">📜 Ishonchnoma (Doverennost)</option>
-              <option value="OLDI_SOTDI_SHARTNOMASI">🚗 Mulk / Avtomobil Oldi-Sotdi Shartnomasi</option>
-              <option value="NIKOH_SHARTNOMASI">💍 Nikoh Shartnomasi</option>
-              <option value="XIZMAT_KORSATISH_SHARTNOMASI">🏢 Xizmat Ko'rsatish Shartnomasi</option>
+              <optgroup label="📜 Fuqarolik & Shartnomalar">
+                <option value="IJARA_SHARTNOMASI">🏠 Uy-Joy Ijara Shartnomasi</option>
+                <option value="QARZ_TILI_XATI">💰 Qarz va Tilxat Hujjati</option>
+                <option value="MEHNAT_SHARTNOMASI">💼 Mehnat Shartnomasi</option>
+                <option value="DAVO_ARIZASI">⚖️ Sudga Da'vo Arizasi</option>
+                <option value="ISHONCHNOMA">📜 Ishonchnoma (Doverennost)</option>
+                <option value="OLDI_SOTDI_SHARTNOMASI">🚗 Mulk / Avtomobil Oldi-Sotdi Shartnomasi</option>
+                <option value="NIKOH_SHARTNOMASI">💍 Nikoh Shartnomasi</option>
+                <option value="XIZMAT_KORSATISH_SHARTNOMASI">🏢 Xizmat Ko'rsatish Shartnomasi</option>
+              </optgroup>
+              <optgroup label="🎓 Abituriyent va Talabalar Hujjatlari">
+                <option value="AKADEMIK_TATIL_ARIZASI">🎓 Akademik Ta'til Berish Arizasi (Rektorga)</option>
+                <option value="PEREVOD_ARIZASI">🔄 O'qishni Ko'chirish (Perevod) Arizasi</option>
+                <option value="YOTOQXONA_ARIZASI">🏠 Yotoqxona (TTJ) Joy Ajratish Arizasi</option>
+                <option value="TALIM_KREDITI_KAFILLIK">💳 Ta'lim Krediti Kafillik Xati Shabloni</option>
+              </optgroup>
             </select>
           </div>
 
@@ -641,6 +667,64 @@
 
       <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 no-scrollbar text-xs">
         <div class="text-slate-400 p-4 text-center">Tarix yuklanmoqda...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YURIDIK OTMLAR VA DTM YO'RIQNOMASI MODAL (RASMIY HAVOLALAR) -->
+  <div id="otmModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-5 border border-blue-500/40 relative space-y-4 shadow-2xl">
+      <button onclick="closeOtmModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs hover:text-white">
+        ✕
+      </button>
+
+      <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm">🏛</div>
+        <div>
+          <h3 class="text-sm font-bold text-white">Yuridik OTMlar va DTM Yo‘riqnomasi</h3>
+          <p class="text-[10px] text-blue-300 font-mono">Rasmiy Davlat Portallari & Havolalar</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Quyida O‘zbekiston Respublikasi rasmiy qabul portallari hamda nufuzli yuridik OTMlarning to‘g‘ridan-to‘g‘ri havolalari keltirilgan:
+      </p>
+
+      <div class="space-y-2 text-xs">
+        <a href="https://my.uzbmb.uz" target="_blank" class="flex items-center justify-between p-3 bg-slate-800/90 hover:bg-slate-700/90 rounded-xl border border-blue-500/30 text-white font-semibold transition-all">
+          <div class="flex items-center gap-2">
+            <span>📋 Bilimni Baholash Agentligi (DTM)</span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-blue-400 text-xs"></i>
+        </a>
+
+        <a href="https://tsul.uz" target="_blank" class="flex items-center justify-between p-3 bg-slate-800/90 hover:bg-slate-700/90 rounded-xl border border-purple-500/30 text-white font-semibold transition-all">
+          <div class="flex items-center gap-2">
+            <span>🏛 TDYU (Toshkent Davlat Yuridik Universiteti)</span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-purple-400 text-xs"></i>
+        </a>
+
+        <a href="https://nuu.uz" target="_blank" class="flex items-center justify-between p-3 bg-slate-800/90 hover:bg-slate-700/90 rounded-xl border border-emerald-500/30 text-white font-semibold transition-all">
+          <div class="flex items-center gap-2">
+            <span>🎓 O‘zMU (O‘zbekiston Milliy Universiteti - Huquq)</span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-emerald-400 text-xs"></i>
+        </a>
+
+        <a href="https://uwed.uz" target="_blank" class="flex items-center justify-between p-3 bg-slate-800/90 hover:bg-slate-700/90 rounded-xl border border-amber-500/30 text-white font-semibold transition-all">
+          <div class="flex items-center gap-2">
+            <span>🌐 JIDU (Jahon Iqtisodiyoti va Diplomatiya)</span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-amber-400 text-xs"></i>
+        </a>
+
+        <a href="https://lex.uz/docs/5472291" target="_blank" class="flex items-center justify-between p-3 bg-slate-800/90 hover:bg-slate-700/90 rounded-xl border border-slate-700 text-slate-200 font-semibold transition-all">
+          <div class="flex items-center gap-2">
+            <span>📜 Lex.uz: OTMlarga qabul qilish tartibi nizomi</span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-slate-400 text-xs"></i>
+        </a>
       </div>
     </div>
   </div>
