@@ -3,7 +3,7 @@ import prisma from '../database/prisma';
 import { Markup } from 'telegraf';
 import { escapeHTML } from '../utils/helpers';
 import UI from '../utils/ui';
-import { seedDtmMockExam } from '../data/dtmMockExamData';
+import { seedDtmMockExam, seedSchoolTextbookQuizzes } from '../data/dtmMockExamData';
 
 export async function handleQuizView(ctx: MyContext) {
   try {
@@ -39,6 +39,7 @@ export async function handleInteractiveQuizView(ctx: MyContext) {
   await ctx.answerCbQuery().catch(() => {});
   try {
     await seedDtmMockExam();
+    await seedSchoolTextbookQuizzes();
 
     const quizzes = await prisma.quiz.findMany({
       include: { _count: { select: { questions: true } } },

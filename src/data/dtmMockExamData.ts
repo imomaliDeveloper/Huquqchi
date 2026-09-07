@@ -324,9 +324,34 @@ export async function seedDtmMockExam() {
       }
       console.log(`✅ [DTM Seed] 30 DTM exam questions successfully imported for Quiz ID: ${quiz.id}`);
     }
+    await seedSchoolTextbookQuizzes();
     return quiz;
   } catch (err) {
     console.error('❌ [DTM Seed Error]:', err);
     return null;
+  }
+}
+
+export async function seedSchoolTextbookQuizzes() {
+  const defaultCategories = [
+    { title: "📘 8-sinf Huquq Darslik Testlari", category: "8-sinf Huquq", desc: "8-sinf Konstitutsiyaviy huquq darslik mavzulari bo'yicha testlar." },
+    { title: "📗 9-sinf Huquq Darslik Testlari", category: "9-sinf Huquq", desc: "9-sinf Inson huquqlari va jamiyat darslik testlari." },
+    { title: "📙 10-sinf Huquq Darslik Testlari", category: "10-sinf Huquq", desc: "10-sinf Fuqarolik va Mehnat huquqi darslik testlari." },
+    { title: "📕 11-sinf Huquq Darslik Testlari", category: "11-sinf Huquq", desc: "11-sinf Davlat va Huquq nazariyasi darslik testlari." },
+  ];
+
+  for (const item of defaultCategories) {
+    try {
+      const existing = await prisma.quiz.findFirst({ where: { title: item.title } });
+      if (!existing) {
+        await prisma.quiz.create({
+          data: {
+            title: item.title,
+            category: item.category,
+            description: item.desc,
+          }
+        });
+      }
+    } catch (e) {}
   }
 }
