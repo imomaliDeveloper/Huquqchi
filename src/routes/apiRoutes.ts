@@ -3,6 +3,7 @@ import prisma from '../database/prisma';
 import { AiService } from '../services/aiService';
 import { DocGeneratorService } from '../services/docGeneratorService';
 import { TtsService } from '../services/ttsService';
+import { FULL_CONSTITUTION_DATA } from '../data/constitutionData';
 
 import bot from '../bot';
 
@@ -287,11 +288,32 @@ router.get('/categories', async (req: Request, res: Response) => {
 // Get Constitution Articles
 router.get('/constitution', async (req: Request, res: Response) => {
   try {
-    const search = req.query.q ? String(req.query.q).toLowerCase() : '';
-    const articles = await prisma.constitutionArticle.findMany({
-      orderBy: { articleNumber: 'asc' },
-      take: 156,
-    });
+    const search = req.query.q ? String(req.query.q).toLowerCase().trim() : '';
+    let articles: any[] = [];
+
+    try {
+      articles = await prisma.constitutionArticle.findMany({
+        orderBy: { articleNumber: 'asc' },
+        take: 156,
+      });
+    } catch (e) {
+      console.warn('⚠️ Constitution DB query failed, using in-memory fallback');
+    }
+
+    if (!articles || articles.length === 0) {
+      articles = FULL_CONSTITUTION_DATA.map((art) => ({
+        id: art.articleNumber + 1,
+        articleNumber: art.articleNumber,
+        title: art.title,
+        chapter: art.chapter,
+        part: art.part,
+        text: art.text,
+        audioFileId: null,
+        audioDuration: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+    }
 
     const filtered = search
       ? articles.filter(
@@ -304,7 +326,7 @@ router.get('/constitution', async (req: Request, res: Response) => {
 
     res.json(filtered);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message || 'Constitution query error' });
   }
 });
 

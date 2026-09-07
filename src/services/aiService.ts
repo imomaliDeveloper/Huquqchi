@@ -54,48 +54,58 @@ JAVOB BERISHDA QUYIDAGI QOIDALARGA QAT'IY AMAL QILING:
 export class AiService {
   static async askLegalQuestion(userId: number, questionText: string): Promise<string> {
     try {
-      // Check user PRO status and 2-use daily limit
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user && !user.isPro) {
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
+      // Check user PRO status and 2-use daily limit safely
+      let user: any = null;
+      try {
+        user = await prisma.user.findUnique({ where: { id: userId } });
+        if (user && !user.isPro) {
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
 
-        const todayCount = await prisma.userActivity.count({
-          where: {
-            userId: user.id,
-            action: 'AI_QUESTION',
-            createdAt: { gte: todayStart },
-          },
-        });
+          const todayCount = await prisma.userActivity.count({
+            where: {
+              userId: user.id,
+              action: 'AI_QUESTION',
+              createdAt: { gte: todayStart },
+            },
+          });
 
-        if (todayCount >= 2) {
-          return `⚠️ <b>Kunlik bepul AI limit tugadi!</b>\n\nSiz bugungi <b>2/2 ta</b> bepul AI yuridik savollar limitingizdan foydalandingiz.\n\n🚀 <b>Cheksiz AI konsultatsiyalar</b>, AI Shartnoma Audit va PDF Hujjat yaratish uchun <b>VIP PRO</b> obunasini faollashtiring!`;
+          if (todayCount >= 2) {
+            return `⚠️ <b>Kunlik bepul AI limit tugadi!</b>\n\nSiz bugungi <b>2/2 ta</b> bepul AI yuridik savollar limitingizdan foydalandingiz.\n\n🚀 <b>Cheksiz AI konsultatsiyalar</b>, AI Shartnoma Audit va PDF Hujjat yaratish uchun <b>VIP PRO</b> obunasini faollashtiring!`;
+          }
         }
+      } catch (dbErr) {
+        console.warn('⚠️ User limit check warning:', dbErr);
       }
 
-      // 1. Persist or fetch active AIConversation
-      let conversation = await prisma.aIConversation.findFirst({
-        where: { userId },
-        orderBy: { updatedAt: 'desc' },
-      });
+      // 1. Persist or fetch active AIConversation safely
+      let conversation: any = null;
+      try {
+        conversation = await prisma.aIConversation.findFirst({
+          where: { userId },
+          orderBy: { updatedAt: 'desc' },
+        });
 
-      if (!conversation) {
-        conversation = await prisma.aIConversation.create({
+        if (!conversation) {
+          conversation = await prisma.aIConversation.create({
+            data: {
+              userId,
+              title: questionText.slice(0, 40) + '...',
+            },
+          });
+        }
+
+        // Save User Message
+        await prisma.aIMessage.create({
           data: {
-            userId,
-            title: questionText.slice(0, 40) + '...',
+            conversationId: conversation.id,
+            sender: 'user',
+            content: questionText,
           },
         });
+      } catch (dbErr) {
+        console.warn('⚠️ AIConversation persistence warning:', dbErr);
       }
-
-      // Save User Message
-      await prisma.aIMessage.create({
-        data: {
-          conversationId: conversation.id,
-          sender: 'user',
-          content: questionText,
-        },
-      });
 
       let aiReplyText = '';
       let aiSuccess = false;
@@ -134,7 +144,7 @@ HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiro
         const activeGenAI = isValidGeminiKey(keyToUse) ? new GoogleGenerativeAI(keyToUse) : null;
 
         if (activeGenAI) {
-          const modelsToTry = ['gemini-3.6-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+          const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
           for (const modelName of modelsToTry) {
             try {
               const model = activeGenAI.getGenerativeModel({ model: modelName });
@@ -167,29 +177,33 @@ HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiro
         aiReplyText += `\n\n----------------------------------------\n⚠️ <i>Eslatma:</i> Ushbu AI javobi ma'lumot berish xarakteriga ega bo‘lib, rasmiy yuridik maslahat o‘rnini bosmaydi.`;
       }
 
-      // Save Assistant Message
-      await prisma.aIMessage.create({
-        data: {
-          conversationId: conversation.id,
-          sender: 'assistant',
-          content: aiReplyText,
-        },
-      });
+      // Save Assistant Message & Log Activity safely
+      if (conversation) {
+        try {
+          await prisma.aIMessage.create({
+            data: {
+              conversationId: conversation.id,
+              sender: 'assistant',
+              content: aiReplyText,
+            },
+          });
 
-      // Update Conversation timestamp
-      await prisma.aIConversation.update({
-        where: { id: conversation.id },
-        data: { updatedAt: new Date() },
-      });
+          await prisma.aIConversation.update({
+            where: { id: conversation.id },
+            data: { updatedAt: new Date() },
+          });
 
-      // Log User Activity
-      await prisma.userActivity.create({
-        data: {
-          userId,
-          action: 'AI_QUESTION',
-          metadata: JSON.stringify({ question: questionText.slice(0, 100) }),
-        },
-      });
+          await prisma.userActivity.create({
+            data: {
+              userId,
+              action: 'AI_QUESTION',
+              metadata: JSON.stringify({ question: questionText.slice(0, 100) }),
+            },
+          });
+        } catch (dbErr) {
+          console.warn('⚠️ AI assistant message persistence warning:', dbErr);
+        }
+      }
 
       return aiReplyText;
     } catch (error) {
