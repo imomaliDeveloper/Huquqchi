@@ -468,24 +468,35 @@ let totalExamTimeSeconds = 0;
 let quizMode = 'quick'; // 'quick' | 'full'
 
 function setupQuizEngine() {
-  const modeSelector = document.getElementById('quizModeSelector');
-  const quizBox = document.getElementById('quizBox');
-
-  if (modeSelector) modeSelector.classList.remove('hidden');
-  if (quizBox) quizBox.classList.add('hidden');
-
   if (quizTimerInterval) clearInterval(quizTimerInterval);
+  startQuizMode('quick');
+}
+
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 async function startQuizMode(mode) {
   tg.HapticFeedback?.impactOccurred('heavy');
   quizMode = mode;
 
-  const modeSelector = document.getElementById('quizModeSelector');
-  const quizBox = document.getElementById('quizBox');
+  const btnQuick = document.getElementById('modeBtnQuick');
+  const btnFull = document.getElementById('modeBtnFull');
 
-  if (modeSelector) modeSelector.classList.add('hidden');
-  if (quizBox) quizBox.classList.remove('hidden');
+  if (btnQuick && btnFull) {
+    if (mode === 'quick') {
+      btnQuick.className = 'flex-1 py-2 px-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1';
+      btnFull.className = 'flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1';
+    } else {
+      btnFull.className = 'flex-1 py-2 px-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1';
+      btnQuick.className = 'flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1';
+    }
+  }
 
   let pool = [...FULL_QUIZ_BANK];
 
@@ -498,13 +509,13 @@ async function startQuizMode(mode) {
     }
   } catch (e) {}
 
+  pool = shuffleArray(pool);
+
   if (mode === 'quick') {
-    // 5 random questions
-    quizData = pool.sort(() => 0.5 - Math.random()).slice(0, 5);
+    quizData = pool.slice(0, 5);
     remainingSeconds = 5 * 45; // 3 min 45 sec
   } else {
-    // 10 questions full cert exam
-    quizData = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
+    quizData = pool.slice(0, 10);
     remainingSeconds = 15 * 60; // 15 min
   }
 

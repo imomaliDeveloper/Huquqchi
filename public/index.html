@@ -368,35 +368,18 @@
           </div>
         </div>
 
-        <!-- Mode Selection Box (Shown initially or after reset) -->
-        <div id="quizModeSelector" class="space-y-3 bg-slate-900/90 border border-purple-500/30 rounded-xl p-4">
-          <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider text-center">Imtihon Rejimini Tanlang:</h4>
-          <div class="grid grid-cols-1 gap-2.5">
-            <button onclick="startQuizMode('quick')" class="p-3.5 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600/50 hover:to-indigo-600/50 border border-purple-500/50 rounded-xl text-left transition-all active:scale-98 flex items-center justify-between">
-              <div>
-                <div class="text-xs font-bold text-white flex items-center gap-1.5">
-                  <span>⚡️ Tezkor Test</span>
-                  <span class="text-[9px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-full font-mono">5 savol</span>
-                </div>
-                <div class="text-[11px] text-slate-400 mt-0.5">Bilimingizni tezkor sinash va takrorlash uchun</div>
-              </div>
-              <i class="fa-solid fa-chevron-right text-purple-400 text-xs"></i>
+        <!-- Active Quiz Box -->
+        <div id="quizBox" class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+          <!-- Top Mode Selector Tabs -->
+          <div class="flex items-center gap-2 mb-4">
+            <button onclick="startQuizMode('quick')" id="modeBtnQuick" class="flex-1 py-2 px-3 bg-purple-600 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1">
+              ⚡️ Tezkor (5 savol)
             </button>
-            <button onclick="startQuizMode('full')" class="p-3.5 bg-gradient-to-r from-amber-600/30 to-orange-600/30 hover:from-amber-600/50 hover:to-orange-600/50 border border-amber-500/50 rounded-xl text-left transition-all active:scale-98 flex items-center justify-between">
-              <div>
-                <div class="text-xs font-bold text-white flex items-center gap-1.5">
-                  <span>🎓 To'liq Milliy Imtihon</span>
-                  <span class="text-[9px] bg-amber-500/30 text-amber-200 px-2 py-0.5 rounded-full font-mono">10 savol • 15 min</span>
-                </div>
-                <div class="text-[11px] text-slate-400 mt-0.5">Real DTM va Sertifikat simulyatsiyasi (taymer bilan)</div>
-              </div>
-              <i class="fa-solid fa-chevron-right text-amber-400 text-xs"></i>
+            <button onclick="startQuizMode('full')" id="modeBtnFull" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-all active:scale-95 flex items-center justify-center gap-1">
+              🎓 To'liq (10 savol)
             </button>
           </div>
-        </div>
 
-        <!-- Active Quiz Box (Hidden by default, shown during test) -->
-        <div id="quizBox" class="hidden bg-slate-900/90 border border-slate-800 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
             <span id="quizQuestionNum" class="text-xs font-bold text-purple-400">Savol 1 / 5</span>
             <span id="quizTimer" class="text-xs font-mono bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30">⏱ 00:30</span>
