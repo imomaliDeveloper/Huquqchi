@@ -60,17 +60,31 @@ async function bootstrap() {
       return;
     }
 
-    // Launch Telegraf polling with graceful error handler
-    bot.launch(() => {
-      console.log('🤖 HuquqchiBot is up and running on Telegram!');
-      console.log(`📢 Target Auto-Post Channel: ${config.telegramChannelUsername}`);
-    }).catch((err) => {
-      if (err?.response?.error_code === 409 || err?.message?.includes('409')) {
-        console.warn('⚠️ Telegram Bot 409 Conflict: Bot boshqa joyda ishlamoqda. Polling to\'xtatildi, lekin Express Web Server faol ishlashda davom etmoqda.');
-      } else {
-        console.error('❌ Bot launch error:', err);
+    // Delete any active webhook and launch Telegraf polling with retry logic for 409 conflicts
+    await bot.telegram.deleteWebhook({ drop_pending_updates: false }).catch(() => {});
+
+    async function launchBotWithRetry(retries = 10, delayMs = 4000) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          await bot.launch(() => {
+            console.log('🤖 HuquqchiBot is up and running on Telegram!');
+            console.log(`📢 Target Auto-Post Channel: ${config.telegramChannelUsername}`);
+          });
+          return;
+        } catch (err: any) {
+          const is409 = err?.response?.error_code === 409 || err?.message?.includes('409');
+          if (is409 && i < retries - 1) {
+            console.warn(`⚠️ Telegram Bot 409 Conflict: Eski bot to'xtashini kutilmoqda... Urinish ${i + 1}/${retries}`);
+            await new Promise((res) => setTimeout(res, delayMs));
+          } else {
+            console.error('❌ Bot launch error:', err?.message || err);
+            break;
+          }
+        }
       }
-    });
+    }
+
+    launchBotWithRetry();
 
     // Enable graceful stop
     const stopBot = (reason: string) => {
