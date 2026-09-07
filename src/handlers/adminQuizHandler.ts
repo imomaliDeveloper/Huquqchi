@@ -349,6 +349,62 @@ export async function handleAdminFinishQuiz(ctx: MyContext) {
   ).catch(() => {});
 }
 
+export async function handleAdminStartPollImportMenu(ctx: MyContext) {
+  await ctx.answerCbQuery().catch(() => {});
+  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
+
+  const categoryButtons = [
+    [
+      Markup.button.callback('📘 8-sinf Huquq Darslik', 'admin_set_import_cat_8-sinf Huquq'),
+      Markup.button.callback('📗 9-sinf Huquq Darslik', 'admin_set_import_cat_9-sinf Huquq'),
+    ],
+    [
+      Markup.button.callback('📙 10-sinf Huquq Darslik', 'admin_set_import_cat_10-sinf Huquq'),
+      Markup.button.callback('📕 11-sinf Huquq Darslik', 'admin_set_import_cat_11-sinf Huquq'),
+    ],
+    [
+      Markup.button.callback('🎯 DTM 2026 Imtihon Testlari', 'admin_set_import_cat_DTM Imtihon Testlari'),
+      Markup.button.callback('📜 Milliy Sertifikat Testlari', 'admin_set_import_cat_Milliy Sertifikat Testlari'),
+    ],
+    [Markup.button.callback('❌ Bekor qilish', 'admin_home')],
+  ];
+
+  return ctx.editMessageText(
+    `📥 <b>TELEGRAM QUIZBOT TEST IMPORT PANELI</b>\n\n` +
+    `Qaysi darslik yoki kategoriya bo‘limi uchun testlarni yuklamoqchisiz?\n` +
+    `Quyidagi bo‘limlardan birini tanlang:`,
+    { parse_mode: 'HTML', ...Markup.inlineKeyboard(categoryButtons) }
+  ).catch(() => {});
+}
+
+export async function handleAdminSetImportCategory(ctx: MyContext, categoryName: string) {
+  await ctx.answerCbQuery().catch(() => {});
+  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
+
+  ctx.session = ctx.session || {};
+  (ctx.session as any).adminQuizImportCategory = categoryName;
+
+  const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
+
+  return ctx.editMessageText(
+    `✅ <b>QUIZBOT TEST IMPORT REJIMI FAOLLASHDI!</b>\n\n` +
+    `📌 <b>Hozirgi Tanlangan Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n\n` +
+    `💡 <b>KO'RSATMA:</b> Endi Telegram'dagi har qanday @QuizBot yoki Poll testlarini to‘g‘ridan-to‘g‘ri ushbu chatga <b>FORWARD (Uzatish)</b> qilishingiz mumkin!\n\n` +
+    `Barcha yuborilgan testlar avtomatik ravishda <b>"${escapeHTML(categoryName)}"</b> bo‘limiga saqlanadi! 🚀`,
+    { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+  ).catch(() => {});
+}
+
+export async function handleAdminStopPollImport(ctx: MyContext) {
+  await ctx.answerCbQuery().catch(() => {});
+  if (ctx.session) {
+    delete (ctx.session as any).adminQuizImportCategory;
+  }
+  return ctx.editMessageText('❌ Import rejimi yopildi. Asosiy admin paneliga qaytishingiz mumkin.', {
+    reply_markup: { inline_keyboard: [[Markup.button.callback('🔙 Admin Panel', 'admin_home')]] }
+  }).catch(() => {});
+}
+
 export async function handleAdminPollImport(ctx: MyContext) {
   if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
 
@@ -372,58 +428,11 @@ export async function handleAdminPollImport(ctx: MyContext) {
   const correctAnswer = letterMap[correctIndex] || 'A';
   const explanation = poll.explanation || null;
 
-  // Store draft in session
-  ctx.session = ctx.session || {};
-  (ctx.session as any).pendingImportPoll = {
-    question,
-    optionA,
-    optionB,
-    optionC,
-    optionD,
-    correctAnswer,
-    explanation,
-  };
-
-  const categoryButtons = [
-    [
-      Markup.button.callback('📘 8-sinf Huquq', 'save_poll_cat_8-sinf Huquq'),
-      Markup.button.callback('📗 9-sinf Huquq', 'save_poll_cat_9-sinf Huquq'),
-    ],
-    [
-      Markup.button.callback('📙 10-sinf Huquq', 'save_poll_cat_10-sinf Huquq'),
-      Markup.button.callback('📕 11-sinf Huquq', 'save_poll_cat_11-sinf Huquq'),
-    ],
-    [
-      Markup.button.callback('🎯 DTM Imtihon Testlari', 'save_poll_cat_DTM Imtihon Testlari'),
-      Markup.button.callback('📜 Milliy Sertifikat', 'save_poll_cat_Milliy Sertifikat Testlari'),
-    ],
-  ];
-
-  return ctx.reply(
-    `📩 <b>TELEGRAM QUIZBOT / POLL TEST USHLANDI!</b>\n\n` +
-    `❓ <b>Savol:</b> ${escapeHTML(question)}\n` +
-    `🅰️ ${escapeHTML(optionA)}\n` +
-    `🅱️ ${escapeHTML(optionB)}\n` +
-    `🅲️ ${escapeHTML(optionC)}\n` +
-    `🅳️ ${escapeHTML(optionD)}\n\n` +
-    `🎯 <b>To‘g‘ri javob:</b> ${correctAnswer}\n\n` +
-    `Ushbu savolni qaysi <b>Darslik / Kategoriya</b> bo‘limiga saqlaymiz?`,
-    { parse_mode: 'HTML', ...Markup.inlineKeyboard(categoryButtons) }
-  );
-}
-
-export async function handleAdminSaveImportedPoll(ctx: MyContext, categoryName: string) {
-  await ctx.answerCbQuery().catch(() => {});
-  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
-
-  const pending = (ctx.session as any)?.pendingImportPoll;
-  if (!pending) {
-    return ctx.reply('⚠️ Saqlash uchun test ma’lumotlari topilmadi. Qayta uzating.');
-  }
+  // Active category in session or fallback
+  const categoryName = (ctx.session as any)?.adminQuizImportCategory || 'DTM Imtihon Testlari';
+  const quizTitle = `${categoryName} Darslik Testlari`;
 
   try {
-    const quizTitle = `${categoryName} Darslik Testlari`;
-
     let quiz = await prisma.quiz.findFirst({
       where: { title: quizTitle },
     });
@@ -441,27 +450,34 @@ export async function handleAdminSaveImportedPoll(ctx: MyContext, categoryName: 
     await prisma.quizQuestion.create({
       data: {
         quizId: quiz.id,
-        question: pending.question,
-        optionA: pending.optionA,
-        optionB: pending.optionB,
-        optionC: pending.optionC,
-        optionD: pending.optionD,
-        correctAnswer: pending.correctAnswer,
-        explanation: pending.explanation || null,
+        question,
+        optionA,
+        optionB,
+        optionC,
+        optionD,
+        correctAnswer,
+        explanation: explanation || null,
       },
     });
 
-    // Clear session draft
-    delete (ctx.session as any).pendingImportPoll;
+    const totalCount = await prisma.quizQuestion.count({
+      where: { quizId: quiz.id },
+    });
 
-    return ctx.editMessageText(
-      `✅ <b>SAVOL BAZAGA MUVAFFAQIYATLI SAQLANDI!</b>\n\n` +
-      `📌 <b>Kategoriya:</b> ${escapeHTML(categoryName)}\n` +
-      `❓ <b>Savol:</b> ${escapeHTML(pending.question)}\n` +
-      `🎯 <b>To‘g‘ri javob:</b> ${pending.correctAnswer}\n\n` +
-      `💡 <i>Yana boshqa @QuizBot testlarini bemalol ushbu chatga uzatishingiz (Forward) mumkin!</i>`,
-      { parse_mode: 'HTML' }
-    ).catch(() => {});
+    const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
+
+    return ctx.reply(
+      `✅ <b>SAVOL BAZAGA MUVAFFAQIYATLI SAQLANDI! (#${totalCount})</b>\n\n` +
+      `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
+      `❓ <b>Savol:</b> ${escapeHTML(question)}\n` +
+      `🅰️ ${escapeHTML(optionA)}\n` +
+      `🅱️ ${escapeHTML(optionB)}\n` +
+      `🅲️ ${escapeHTML(optionC)}\n` +
+      `🅳️ ${escapeHTML(optionD)}\n\n` +
+      `🎯 <b>To‘g‘ri javob:</b> <b>${correctAnswer}</b>\n\n` +
+      `💡 <i>Keyingi @QuizBot testini bemalol FORWARD qilishingiz mumkin!</i>`,
+      { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
+    );
   } catch (error) {
     console.error('Error saving imported poll:', error);
     return ctx.reply('⚠️ Savolni saqlashda xatolik yuz berdi.');

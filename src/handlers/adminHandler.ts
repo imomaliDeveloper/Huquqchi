@@ -54,6 +54,7 @@ export async function handleAdminCommand(ctx: MyContext) {
     [Markup.button.callback('💰 Sotuvlar & Daromad Hisoboti', 'admin_revenue')],
     [Markup.button.callback('📥 Foydalanuvchilarni CSV Export qilish', 'admin_export_csv')],
     [Markup.button.callback('🎓 Milliy Sertifikat PDF Qo‘llanma Yuklash', 'admin_upload_cert_pdf')],
+    [Markup.button.callback('📥 @QuizBot Testlarini Import Qilish', 'admin_start_poll_import')],
     [Markup.button.callback('📝 Yangi Test Yaratish', 'admin_create_quiz')],
     [Markup.button.callback('📚 Oddiy PDF Kitob / Material Yuklash', 'admin_upload_pdf')],
     [Markup.button.callback('📊 Tizim Statistikasi', 'admin_stats')],
