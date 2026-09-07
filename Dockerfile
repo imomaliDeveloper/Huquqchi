@@ -14,7 +14,6 @@ RUN npm ci
 COPY . .
 
 RUN npx prisma generate
-RUN npx prisma db push --accept-data-loss
 RUN npm run build
 
 # Step 2: Production stage
@@ -27,6 +26,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV DATABASE_URL="file:./dev.db"
+ENV PORT=3000
 
 COPY package*.json ./
 RUN npm ci --only=production
@@ -34,7 +34,6 @@ RUN npm ci --only=production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/dev.db ./dev.db
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
