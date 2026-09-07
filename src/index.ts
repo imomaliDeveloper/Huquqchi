@@ -3,6 +3,7 @@ import { bot, setupBotHandlers } from './bot';
 import prisma from './database/prisma';
 import { CronService } from './services/cronService';
 import { startExpressServer } from './server';
+import { seedDtmMockExam } from './data/dtmMockExamData';
 
 async function bootstrap() {
   try {
@@ -21,6 +22,9 @@ async function bootstrap() {
     // Verify database connection
     await prisma.$connect();
     console.log('✅ Database connected successfully.');
+
+    // Seed 30-Question DTM Mock Exam in DB
+    await seedDtmMockExam();
 
     // Start Express Web API & Web App server
     const port = Number(process.env.PORT) || 3000;

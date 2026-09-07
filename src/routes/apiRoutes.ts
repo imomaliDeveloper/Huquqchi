@@ -6,6 +6,7 @@ import { TtsService } from '../services/ttsService';
 import { ExamScraperService } from '../services/examScraperService';
 import { MotivationService } from '../services/motivationService';
 import { FULL_CONSTITUTION_DATA } from '../data/constitutionData';
+import { seedDtmMockExam } from '../data/dtmMockExamData';
 
 import bot from '../bot';
 
@@ -375,6 +376,7 @@ router.get('/constitution/audio', async (req: Request, res: Response) => {
 // Get Available Quizzes
 router.get('/quizzes', async (req: Request, res: Response) => {
   try {
+    await seedDtmMockExam();
     const quizzes = await prisma.quiz.findMany({
       include: {
         questions: true,
@@ -478,6 +480,7 @@ router.post('/quiz/submit', async (req: Request, res: Response) => {
 // Get Quiz Questions (From DB or Fallback)
 router.get('/quiz/questions', async (req: Request, res: Response) => {
   try {
+    await seedDtmMockExam();
     const questions = await prisma.quizQuestion.findMany({
       orderBy: { createdAt: 'desc' },
       take: 50,
