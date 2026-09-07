@@ -54,24 +54,20 @@ JAVOB BERISHDA QUYIDAGI QOIDALARGA QAT'IY AMAL QILING:
 export class AiService {
   static async askLegalQuestion(userId: number, questionText: string): Promise<string> {
     try {
-      // Check user PRO status and 2-use daily limit safely
+      // Check user PRO status and 50-use limit safely
       let user: any = null;
       try {
         user = await prisma.user.findUnique({ where: { id: userId } });
         if (user && !user.isPro) {
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-
-          const todayCount = await prisma.userActivity.count({
+          const totalAsked = await prisma.userActivity.count({
             where: {
               userId: user.id,
               action: 'AI_QUESTION',
-              createdAt: { gte: todayStart },
             },
           });
 
-          if (todayCount >= 2) {
-            return `⚠️ <b>Kunlik bepul AI limit tugadi!</b>\n\nSiz bugungi <b>2/2 ta</b> bepul AI yuridik savollar limitingizdan foydalandingiz.\n\n🚀 <b>Cheksiz AI konsultatsiyalar</b>, AI Shartnoma Audit va PDF Hujjat yaratish uchun <b>VIP PRO</b> obunasini faollashtiring!`;
+          if (totalAsked >= 50) {
+            return `⚠️ <b>Bepul AI limit tugadi!</b>\n\nSiz <b>50/50 ta</b> bepul AI yuridik savollar limitingizdan foydalandingiz.\n\n🚀 <b>Cheksiz AI konsultatsiyalar</b>, AI Shartnoma Audit va PDF Hujjat yaratish uchun <b>VIP PRO</b> obunasini faollashtiring!`;
           }
         }
       } catch (dbErr) {
@@ -246,7 +242,10 @@ HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiro
       const activeGenAI = genAI || (isValidGeminiKey(config.geminiApiKey) ? new GoogleGenerativeAI(config.geminiApiKey!) : null);
 
       if (activeGenAI) {
-        const model = activeGenAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+        let aiReplyText = '';
+        let success = false;
+
         const prompt =
           `${LEGAL_SYSTEM_PROMPT}\n\n` +
           `Sizga foydalanuvchining o'zbek tilidagi ovozli murojaati audio fayli yuborildi.\n` +
@@ -254,30 +253,43 @@ HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiro
           `1. Audio yozuvdagi foydalanuvchi aytgan savolni diqqat bilan eshitib, avval "❓ <b>Sizning savolingiz:</b> [foydalanuvchi aytgan savol matni]" deb yozing.\n` +
           `2. So'ngra ushbu savolga O'zbekiston Respublikasi qonunchiligi (Kodekslar va Moddalar) bo'yicha aniq FAKTLAR bilan yuridik maslahat bering.`;
 
-        const result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: audioBuffer.toString('base64'),
-            },
-          },
-        ]);
-        const response = await result.response;
-        let aiReplyText = response.text();
-
-        if (!aiReplyText.includes('rasmiy yuridik maslahat')) {
-          aiReplyText += `\n\n----------------------------------------\n⚠️ <i>Eslatma:</i> Ushbu AI javobi ma'lumot berish xarakteriga ega bo‘lib, rasmiy yuridik maslahat o‘rnini bosmaydi.`;
+        for (const modelName of modelsToTry) {
+          try {
+            const model = activeGenAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent([
+              prompt,
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: audioBuffer.toString('base64'),
+                },
+              },
+            ]);
+            const response = await result.response;
+            const resText = response.text();
+            if (resText && resText.trim().length > 0) {
+              aiReplyText = resText.trim();
+              success = true;
+              break;
+            }
+          } catch (mErr) {
+            console.warn(`Audio model '${modelName}' call failed, trying next...`);
+          }
         }
 
-        return aiReplyText;
-      } else {
-        return (
-          `⚖️ <b>OVOZLI AI KONSULTATSIYA:</b>\n\n` +
-          `Ovozli murojaatingiz qabul qilindi. Ovozli savollarni yanada aniqroq va moddalar bilan tahlil qilish uchun savolingizni matn ko‘rinishida yuborishingizni so‘raymiz.\n\n` +
-          `----------------------------------------\n⚠️ <i>Eslatma:</i> Ushbu AI javobi ma'lumot berish xarakteriga ega bo‘lib, rasmiy yuridik maslahat o‘rnini bosmaydi.`
-        );
+        if (success) {
+          if (!aiReplyText.includes('rasmiy yuridik maslahat')) {
+            aiReplyText += `\n\n----------------------------------------\n⚠️ <i>Eslatma:</i> Ushbu AI javobi ma'lumot berish xarakteriga ega bo‘lib, rasmiy yuridik maslahat o‘rnini bosmaydi.`;
+          }
+          return aiReplyText;
+        }
       }
+
+      return (
+        `⚖️ <b>OVOZLI AI KONSULTATSIYA:</b>\n\n` +
+        `Ovozli murojaatingiz qabul qilindi. Ovozli savollarni yanada aniqroq va moddalar bilan tahlil qilish uchun savolingizni matn ko‘rinishida yuborishingizni so‘raymiz.\n\n` +
+        `----------------------------------------\n⚠️ <i>Eslatma:</i> Ushbu AI javobi ma'lumot berish xarakteriga ega bo‘lib, rasmiy yuridik maslahat o‘rnini bosmaydi.`
+      );
     } catch (err) {
       console.error('Error in askLegalQuestionFromAudio:', err);
       return (
