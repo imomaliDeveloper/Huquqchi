@@ -375,76 +375,187 @@ function setupRiskForm() {
 // ----------------------------------------------------
 // 3. QUIZ ENGINE & CERTIFICATE SUBMISSION
 // ----------------------------------------------------
-let quizData = [
+const FULL_QUIZ_BANK = [
   {
     question: "Abdulla do‘kondan kir yuvish mashinasini sotib olmoqchi. Ushbu vaziyatda Abdullaning tovar haqida ma’lumot olish huquqi huquqiy munosabatlarning qaysi tarkibiy elementiga oid hisoblanadi?",
-    options: ["A) subyektiv huquq", "B) yuridik majburiyat", "C) obyekt", "D) subyekt"],
+    options: ["A) Subyektiv huquq", "B) Yuridik majburiyat", "C) Obyekt", "D) Subyekt"],
     correct: 0,
     explanation: "O'zR Fuqarolik kodeksiga ko'ra, iste'molchining tovar haqida ma'lumot talab qilish huquqi fuqarolik huquqiy munosabatlarining subyektiv huquq elementiga kiradi."
   },
   {
     question: "To‘g‘ri berilgan ma’lumotni aniqlang (Oila kodeksi, 93-modda, 2025-yil holatiga ko‘ra):",
     options: [
-      "A) voyaga yetmagan bolalar qonunda belgilangan tartibda xususiy mulk egasi bo‘lish huquqiga ega",
-      "B) vasiylik va homiylik organi tomonidan ota-ona va bolalar manfaatlari o‘rtasida qarama-qarshilik borligi aniqlanganda, ota-ona o‘z bolalarining manfaatlarini himoya qilishga haqli",
-      "C) voyaga yetmagan bolalarning shaxsiy mehnati va tadbirkorlik faoliyati natijasida orttirgan mol-mulki ularning xususiy mulki hisoblanmaydi",
-      "D) voyaga yetmaganlarning shaxsiy foydalanishidagi buyumlari (kiyim-kechak, poyabzal va h.k.) ularning xususiy mulki hisoblanmaydi"
+      "A) Voyaga yetmagan bolalar qonunda belgilangan tartibda xususiy mulk egasi bo‘lish huquqiga ega",
+      "B) Vasiylik organi ota-ona va bolalar manfaatlari o‘rtasida qarama-qarshilik borligini aniqlaganda ham ota-ona bolani himoya qiladi",
+      "C) Voyaga yetmagan bolalarning shaxsiy mehnati bilan orttirgan mol-mulki ularning xususiy mulki hisoblanmaydi",
+      "D) Voyaga yetmaganlarning shaxsiy foydalanishidagi buyumlari (kiyim, poyabzal) ularning xususiy mulki hisoblanmaydi"
     ],
     correct: 0,
     explanation: "Oila kodeksining 93-moddasiga muvofiq, voyaga yetmagan bolalar qonuniy tartibda xususiy mulk ob'yekti va egasi bo'lish huquqiga egadirlar."
   },
   {
-    question: "Quyida berilganlardan qaysilari advokatlik faoliyatining turlariga kiradi? (\"Advokatura to‘g‘risida\"gi qonun, 5-modda):\n1) meros guvohnomasini berish; 2) fuqarolik/iqtisodiy/ma'muriy ishlarda sudda va organlarda vakillik; 3) bitimlarni va vasiyatnomalarni tasdiqlash; 4) jinoyat ishlarida himoyachi sifatida ishtirok etish; 5) hujjat nusxalarini shahodatlash; 6) hakamlik va xalqaro tijorat arbitrajida vakillik.",
+    question: "Quyida berilganlardan qaysilari advokatlik faoliyatining turlariga kiradi? (\"Advokatura to‘g‘risida\"gi qonun, 5-modda):\n1) meros guvohnomasini berish; 2) fuqarolik/iqtisodiy/ma'muriy ishlarda sudda vakillik; 3) bitimlarni tasdiqlash; 4) jinoyat ishlarida himoyachi bo'lish; 5) hujjat nusxalarini shahodatlash; 6) hakamlik va arbitrajda vakillik.",
     options: ["A) 1, 4, 6", "B) 1, 3, 5", "C) 2, 4, 6", "D) 2, 3, 5"],
     correct: 2,
     explanation: "\"Advokatura to'g'risida\"gi Qonunning 5-moddasiga ko'ra, 2, 4 va 6-bandlar advokatlik faoliyatining rasmiy turlari hisoblanadi (1, 3, 5 esa Notariat vakolatiga kiradi)."
   },
   {
-    question: "Quyida berilgan ma’lumotlarga mos yakuniy xulosalar (to‘g‘ri/noto‘g‘ri) keltirilgan javobni aniqlang (Konstitutsiya):\nI. Prezident vazifasini bajara olmaganda Senat Raisiga o'tadi va 3 oyda saylov o'tkaziladi;\nII. Konstitutsiyaviy qonunlarni qabul qilishda deputat/senatorlar kamida 2/3 qismi ishtirok etishi shart;\nIII. Senat o'zini tarqatish bo'yicha 1/3 ko'pchilik ovoz bilan qaror qiladi;\nIV. Qonunchilik palatasi va Senat farmoyish va farmon chiqaradi;\nV. Oliy Majlis tarqatilganda yangi saylov 6 oyda o'tkaziladi.",
+    question: "Quyida berilgan ma’lumotlarga mos yakuniy xulosalar (to‘g‘ri/noto‘g‘ri) keltirilgan javobni aniqlang (Konstitutsiya):\nI. Prezident vazifasini bajara olmaganda Senat Raisiga o'tadi va 3 oyda saylov o'tkaziladi;\nII. Konstitutsiyaviy qonunlarni qabul qilishda deputat/senatorlar kamida 2/3 qismi ishtirok etishi shart;\nIII. Senat o'zini tarqatish bo'yicha 1/3 ko'pchilik ovoz bilan qaror qiladi;",
     options: [
-      "A) I-to‘g‘ri; II-noto‘g‘ri; III-to‘g‘ri; IV-to‘g‘ri; V-to‘g‘ri",
-      "B) I-to‘g‘ri; II-to‘g‘ri; III-noto‘g‘ri; IV-noto‘g‘ri; V-noto‘g‘ri",
-      "C) I-noto‘g‘ri; II-to‘g‘ri; III-noto‘g‘ri; IV-to‘g‘ri; V-noto‘g‘ri",
-      "D) I-noto‘g‘ri; II-noto‘g‘ri; III-to‘g‘ri; IV-noto‘g‘ri; V-noto‘g‘ri"
+      "A) I-to‘g‘ri; II-noto‘g‘ri; III-to‘g‘ri",
+      "B) I-to‘g‘ri; II-to‘g‘ri; III-noto‘g‘ri",
+      "C) I-noto‘g‘ri; II-to‘g‘ri; III-noto‘g‘ri",
+      "D) I-noto‘g‘ri; II-noto‘g‘ri; III-to‘g‘ri"
     ],
     correct: 1,
-    explanation: "Konstitutsiyaga ko'ra, I va II to'g'ri, III, IV va V esa noto'g'ri (Senat qarorlari 2/3 ko'pchilik bilan olinadi, parlament farmon chiqarmaydi)."
+    explanation: "Konstitutsiyaga ko'ra, I va II to'g'ri, III esa noto'g'ri (Senat qarorlari 2/3 ko'pchilik bilan olinadi)."
   },
   {
     question: "Har kunlik ish (smena)ning davomiyligi 16 yoshdan 18 yoshgacha bo‘lgan xodimlar uchun 5 kunlik ish haftasida necha soatdan oshishi mumkin emas (Mehnat kodeksi, 416-modda)?",
     options: [
-      "A) besh soatu o‘ttiz daqiqadan",
-      "B) yetti soatu o‘ttiz daqiqadan",
-      "C) to‘rt soatdan",
-      "D) olti soatdan"
+      "A) 5 soatu 30 daqiqadan",
+      "B) 7 soatu 30 daqiqadan",
+      "C) 4 soatdan",
+      "D) 6 soatdan"
     ],
     correct: 1,
     explanation: "Mehnat kodeksining 416-moddasiga ko'ra, 16 yoshdan 18 yoshgacha bo'lgan o'smirlar uchun kunlik ish smenasi 7 soat 30 daqiqadan oshmasligi kerak."
+  },
+  {
+    question: "O‘zbekiston Respublikasi Konstitutsiyasiga muvofiq Davlat hokimiyatining yagona manbai kim hisoblanadi?",
+    options: ["A) Oliy Majlis", "B) Prezident", "C) O‘zbekiston xalqi", "D) Konstitutsiyaviy Sud"],
+    correct: 2,
+    explanation: "Konstitutsiyaning 7-moddasi: O‘zbekiston xalqi davlat hokimiyatining yagona manbaidir."
+  },
+  {
+    question: "Fuqarolik huquqida emansipatsiya deb nimaga aytiladi?",
+    options: [
+      "A) Voyaga yetmagan 16 yoshga to'lgan shaxsning to'liq muomala layoqatli deb e'lon qilinishi",
+      "B) Shaxsning huquq layoqatidan mahrum etilishi",
+      "C) Sud qarori bilan muomala layoqatsiz deb topilishi",
+      "D) Chet el fuqarosiga O'zbekiston fuqaroligi berilishi"
+    ],
+    correct: 0,
+    explanation: "Fuqarolik kodeksining 28-moddasi: 16 yoshga to'lgan voyaga yetmagan shaxs mehnat shartnomasi bo'yicha ishlayotgan bo'lsa yoki tadbirkorlik bilan shug'ullanayotgan bo'lsa, to'liq muomala layoqatli deb e'lon qilinishi (emansipatsiya) mumkin."
+  },
+  {
+    question: "Ma'muriy javobgarlik to'g'risidagi kodeksga ko'ra Ma'muriy qamoq muddati ko'pi bilan necha sutkani tashkil etadi?",
+    options: ["A) 15 sutka (favqulodda holatda 30 sutka)", "B) 30 sutka", "C) 60 sutka", "D) 10 sutka"],
+    correct: 0,
+    explanation: "MJtK 29-moddasiga ko'ra ma'muriy qamoq 15 sutkagacha, favqulodda holat rejimida esa 30 sutkagacha qo'llaniladi."
+  },
+  {
+    question: "Mehnat shartnomasini bekor qilishda xodim necha kun oldin ish beruvchini yozma ravishda ogohlantirishi shart?",
+    options: ["A) 14 kun (2 hafta)", "B) 1 o'y", "C) 3 kun", "D) 7 kun"],
+    correct: 0,
+    explanation: "Mehnat kodeksining 160-moddasiga ko'ra xodim o'z xohishiga ko'ra mehnat shartnomasini bekor qilish haqida ish beruvchini 2 hafta (14 kun) oldin yozma ravishda ogohlantirishi shart."
+  },
+  {
+    question: "Oila kodeksiga ko'ra nikoh yoshi erkaklar va ayollar uchun necha yosh etib belgilangan?",
+    options: ["A) 18 yosh", "B) 17 yosh", "C) Erkaklar 18, ayollar 17", "D) 21 yosh"],
+    correct: 0,
+    explanation: "Oila kodeksining 15-moddasiga muvofiq O'zbekiston Respublikasida nikoh yoshi erkaklar va ayollar uchun o'n sakkiz (18) yosh etib belgilangan."
   }
 ];
 
+let quizData = [];
 let currentQuizIdx = 0;
 let score = 0;
 let userAnswers = [];
+let quizTimerInterval = null;
+let remainingSeconds = 0;
+let totalExamTimeSeconds = 0;
+let quizMode = 'quick'; // 'quick' | 'full'
 
 function setupQuizEngine() {
+  const modeSelector = document.getElementById('quizModeSelector');
+  const quizBox = document.getElementById('quizBox');
+
+  if (modeSelector) modeSelector.classList.remove('hidden');
+  if (quizBox) quizBox.classList.add('hidden');
+
+  if (quizTimerInterval) clearInterval(quizTimerInterval);
+}
+
+function startQuizMode(mode) {
+  tg.HapticFeedback?.impactOccurred('heavy');
+  quizMode = mode;
+
+  const modeSelector = document.getElementById('quizModeSelector');
+  const quizBox = document.getElementById('quizBox');
+
+  if (modeSelector) modeSelector.classList.add('hidden');
+  if (quizBox) quizBox.classList.remove('hidden');
+
+  if (mode === 'quick') {
+    // 5 random questions
+    quizData = [...FULL_QUIZ_BANK].sort(() => 0.5 - Math.random()).slice(0, 5);
+    remainingSeconds = 5 * 45; // 3 min 45 sec
+  } else {
+    // 10 questions full cert exam
+    quizData = [...FULL_QUIZ_BANK];
+    remainingSeconds = 15 * 60; // 15 min
+  }
+
+  totalExamTimeSeconds = remainingSeconds;
   currentQuizIdx = 0;
   score = 0;
   userAnswers = [];
+
+  startQuizTimer();
   renderQuizQuestion();
+}
+
+function startQuizTimer() {
+  if (quizTimerInterval) clearInterval(quizTimerInterval);
+
+  updateTimerDisplay();
+  quizTimerInterval = setInterval(() => {
+    remainingSeconds--;
+    updateTimerDisplay();
+
+    if (remainingSeconds <= 0) {
+      clearInterval(quizTimerInterval);
+      tg.HapticFeedback?.notificationOccurred('error');
+      alert('⏱ Vaqt tugadi! Imtihon natijalari hisoblanmoqda...');
+      submitQuizResult();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const timerEl = document.getElementById('quizTimer');
+  if (!timerEl) return;
+
+  const mins = Math.floor(remainingSeconds / 60);
+  const secs = remainingSeconds % 60;
+  const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+  timerEl.textContent = `⏱ ${formatted}`;
+
+  if (remainingSeconds < 60) {
+    timerEl.className = 'text-xs font-mono bg-red-500/20 text-red-400 px-2.5 py-1 rounded-full border border-red-500/40 animate-pulse';
+  } else {
+    timerEl.className = 'text-xs font-mono bg-purple-500/20 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30';
+  }
 }
 
 function renderQuizQuestion() {
   const questionNum = document.getElementById('quizQuestionNum');
   const questionText = document.getElementById('quizQuestionText');
   const optionsDiv = document.getElementById('quizOptions');
+  const progressBar = document.getElementById('quizProgressBar');
 
   if (!questionNum || !questionText || !optionsDiv) return;
 
   if (currentQuizIdx >= quizData.length) {
+    if (quizTimerInterval) clearInterval(quizTimerInterval);
     submitQuizResult();
     return;
   }
+
+  const progressPct = ((currentQuizIdx) / quizData.length) * 100;
+  if (progressBar) progressBar.style.width = `${progressPct}%`;
 
   const q = quizData[currentQuizIdx];
   questionNum.textContent = `Savol ${currentQuizIdx + 1} / ${quizData.length}`;
@@ -452,7 +563,7 @@ function renderQuizQuestion() {
 
   optionsDiv.innerHTML = q.options.map((opt, idx) => `
     <button onclick="handleAnswer(${idx})" class="w-full text-left p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-all font-medium flex items-center gap-2 active:scale-98">
-      <span class="w-5 h-5 rounded-full bg-slate-700 text-purple-300 font-bold text-[10px] flex items-center justify-center">${String.fromCharCode(65 + idx)}</span>
+      <span class="w-5 h-5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold text-[10px] flex items-center justify-center">${String.fromCharCode(65 + idx)}</span>
       ${escapeHtml(opt)}
     </button>
   `).join('');
@@ -484,9 +595,19 @@ function handleAnswer(selectedIdx) {
 }
 
 async function submitQuizResult() {
+  if (quizTimerInterval) clearInterval(quizTimerInterval);
+
   const questionNum = document.getElementById('quizQuestionNum');
   const questionText = document.getElementById('quizQuestionText');
   const optionsDiv = document.getElementById('quizOptions');
+  const progressBar = document.getElementById('quizProgressBar');
+
+  if (progressBar) progressBar.style.width = '100%';
+
+  const timeSpentSeconds = totalExamTimeSeconds - remainingSeconds;
+  const timeSpentMins = Math.floor(timeSpentSeconds / 60);
+  const timeSpentSecs = timeSpentSeconds % 60;
+  const formattedSpent = `${timeSpentMins} daq ${timeSpentSecs} sek`;
 
   try {
     const res = await fetch('/api/quiz/submit', {
@@ -495,13 +616,35 @@ async function submitQuizResult() {
       body: JSON.stringify({
         telegramId: currentTelegramId,
         score,
-        totalQuestions: quizData.length
+        totalQuestions: quizData.length,
+        durationSeconds: timeSpentSeconds
       })
     });
     const data = await res.json();
 
-    if (questionNum) questionNum.textContent = `🎓 Natija: ${data.gradeLevel} Daraja (${Math.round(data.percentage)}%)`;
-    if (questionText) questionText.textContent = `Siz ${quizData.length} ta savoldan ${score} tasiga to'g'ri javob berdingiz. Pastda xatolaringiz yuridik tahlilini ko'rib chiqishingiz mumkin:`;
+    const gradeColor = data.gradeLevel === 'A+' ? 'text-emerald-400' :
+                       data.gradeLevel === 'A' ? 'text-blue-400' :
+                       data.gradeLevel === 'B+' ? 'text-purple-400' :
+                       data.gradeLevel === 'B' ? 'text-amber-400' : 'text-red-400';
+
+    if (questionNum) {
+      questionNum.innerHTML = `<span class="${gradeColor} font-bold text-sm">🎓 Grade: ${data.gradeLevel} (${Math.round(data.percentage)}%)</span>`;
+    }
+
+    if (questionText) {
+      questionText.innerHTML = `
+        <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-3 space-y-1 my-1 text-xs">
+          <div class="flex justify-between font-semibold text-slate-200">
+            <span>🎯 To'g'ri javoblar:</span>
+            <span class="text-emerald-400 font-bold">${score} / ${quizData.length}</span>
+          </div>
+          <div class="flex justify-between font-semibold text-slate-200">
+            <span>⏱ Sarflangan vaqt:</span>
+            <span class="text-purple-300 font-mono">${formattedSpent}</span>
+          </div>
+        </div>
+      `;
+    }
 
     if (optionsDiv) {
       const reviewHtml = userAnswers.map((ua, idx) => `
@@ -515,7 +658,7 @@ async function submitQuizResult() {
             ${!ua.isCorrect ? `<div class="text-emerald-400 font-bold">To‘g‘ri javob: ${escapeHtml(ua.options[ua.correct])}</div>` : ''}
           </div>
           <div class="bg-slate-800/80 p-2 rounded-lg text-[10px] text-slate-300 border border-slate-700/60 mt-1">
-            💡 <strong class="text-purple-300">Yuridik Izoh:</strong> ${escapeHtml(ua.explanation)}
+            💡 <strong class="text-purple-300">O'zR Qonunchiligi Izohi:</strong> ${escapeHtml(ua.explanation)}
           </div>
         </div>
       `).join('');
@@ -524,7 +667,7 @@ async function submitQuizResult() {
         <div class="space-y-3 pt-2">
           ${reviewHtml}
           <button onclick="resetQuiz()" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl text-xs active:scale-95 shadow-lg shadow-purple-600/30">
-            🔄 Testni Qayta Topshirish
+            🔄 Boshqa Rejimda Qayta Topshirish
           </button>
         </div>
       `;
@@ -536,9 +679,7 @@ async function submitQuizResult() {
 }
 
 function resetQuiz() {
-  currentQuizIdx = 0;
-  score = 0;
-  renderQuizQuestion();
+  setupQuizEngine();
 }
 
 // ----------------------------------------------------
