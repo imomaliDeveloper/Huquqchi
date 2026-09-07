@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: huquqchi-bot
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: "file:./dev.db"
+      - key: BOT_TOKEN
+        value: 8708913937:AAFxVGita3lGuBLm1xgIWGdzhXh-SrEko7c
+      - key: MINI_APP_URL
+        value: https://huquqchi-lovat.vercel.app
