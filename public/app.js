@@ -1381,3 +1381,41 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// DTM & Milliy Sertifikat Live Countdown Timer
+function startExamCountdown() {
+  // Official target date: 2026 Season DTM Exam Start (July 15, 2026 08:00 AM)
+  const targetDate = new Date('2026-07-15T08:00:00').getTime();
+
+  function updateTimer() {
+    const now = new Date().getTime();
+    const diff = targetDate - now;
+
+    const daysEl = document.getElementById('countdownDays');
+    const hoursEl = document.getElementById('countdownHours');
+    const minsEl = document.getElementById('countdownMins');
+    const secsEl = document.getElementById('countdownSecs');
+
+    if (diff <= 0) {
+      if (daysEl) daysEl.textContent = '00';
+      if (hoursEl) hoursEl.textContent = '00';
+      if (minsEl) minsEl.textContent = '00';
+      if (secsEl) secsEl.textContent = '00';
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+    if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+    if (minsEl) minsEl.textContent = String(minutes).padStart(2, '0');
+    if (secsEl) secsEl.textContent = String(seconds).padStart(2, '0');
+  }
+
+  updateTimer();
+  setInterval(updateTimer, 1000);
+}
+
