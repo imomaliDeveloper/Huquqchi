@@ -116,8 +116,57 @@ Foydalanuvchining savoliga o'zingizning chuqur huquqiy bilimlaringiz asosida ani
 Javobingiz O‘zbekiston Respublikasining Kodekslari (Fuqarolik, Mehnat, Jinoyat, Soliq va h.k.) hamda tegishli qonunlariga tayangan holda professional va samimiy dilda bo'lsin.
 HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiroyli formatlang.`;
 
-      // 2. Try OpenAI ChatGPT API if OPENAI_API_KEY is set
-      if (isValidOpenAIKey(config.openaiApiKey)) {
+      // 2. Try Google Gemini API directly (Primary AI Provider)
+      const keyToUse = config.geminiApiKey ? config.geminiApiKey.trim() : '';
+      if (isValidGeminiKey(keyToUse)) {
+        const activeGenAI = new GoogleGenerativeAI(keyToUse);
+        const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-flash-latest', 'gemini-pro-latest'];
+
+        for (const modelName of modelsToTry) {
+          try {
+            const model = activeGenAI.getGenerativeModel({ model: modelName });
+            const prompt = `${directLegalPrompt}\n\nFoydalanuvchi savoli:\n"${questionText}"`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const textResult = response.text();
+            if (textResult && textResult.trim().length > 0) {
+              aiReplyText = textResult.trim();
+              aiSuccess = true;
+              console.log(`✅ Gemini AI successfully responded using model '${modelName}'`);
+              break;
+            }
+          } catch (mErr: any) {
+            console.warn(`Gemini SDK model '${modelName}' call warning:`, mErr?.message || mErr);
+          }
+        }
+
+        // Direct HTTP REST API fallback if SDK fails
+        if (!aiSuccess) {
+          try {
+            const restUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${keyToUse}`;
+            const restRes = await fetch(restUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: `${directLegalPrompt}\n\nFoydalanuvchi savoli:\n"${questionText}"` }] }],
+              }),
+            });
+            const restData = await restRes.json();
+            const textResult = restData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textResult && textResult.trim().length > 0) {
+              aiReplyText = textResult.trim();
+              aiSuccess = true;
+              console.log('✅ Gemini AI successfully responded via REST API fallback');
+            }
+          } catch (restErr: any) {
+            console.warn('Gemini REST API fallback error:', restErr?.message || restErr);
+          }
+        }
+      }
+
+      // 3. Try OpenAI ChatGPT API as secondary provider
+      if (!aiSuccess && isValidOpenAIKey(config.openaiApiKey)) {
         try {
           const openai = new OpenAI({ apiKey: config.openaiApiKey.trim() });
           const completion = await openai.chat.completions.create({
@@ -134,34 +183,7 @@ HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiro
             aiSuccess = true;
           }
         } catch (openAiErr: any) {
-          console.warn('OpenAI ChatGPT call failed, falling back to Gemini:', openAiErr?.message || openAiErr);
-        }
-      }
-
-      // 3. Try Google Gemini API directly
-      if (!aiSuccess) {
-        const keyToUse = config.geminiApiKey ? config.geminiApiKey.trim() : '';
-        const activeGenAI = isValidGeminiKey(keyToUse) ? new GoogleGenerativeAI(keyToUse) : null;
-
-        if (activeGenAI) {
-          const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
-          for (const modelName of modelsToTry) {
-            try {
-              const model = activeGenAI.getGenerativeModel({ model: modelName });
-              const prompt = `${directLegalPrompt}\n\nFoydalanuvchi savoli:\n"${questionText}"`;
-
-              const result = await model.generateContent(prompt);
-              const response = await result.response;
-              const textResult = response.text();
-              if (textResult && textResult.trim().length > 0) {
-                aiReplyText = textResult.trim();
-                aiSuccess = true;
-                break;
-              }
-            } catch (mErr: any) {
-              console.warn(`Gemini API model '${modelName}' call failed:`, mErr?.message || mErr);
-            }
-          }
+          console.warn('OpenAI ChatGPT call failed:', openAiErr?.message || openAiErr);
         }
       }
 
@@ -420,7 +442,7 @@ HTML teglaridan (<b>bold</b>, <i>italic</i>, <code>code</code>) foydalanib chiro
       const activeGenAI = genAI || (config.geminiApiKey ? new GoogleGenerativeAI(config.geminiApiKey) : null);
 
       if (activeGenAI && config.geminiApiKey) {
-        const model = activeGenAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = activeGenAI.getGenerativeModel({ model: 'gemini-3.5-flash-lite' });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         return response.text();
