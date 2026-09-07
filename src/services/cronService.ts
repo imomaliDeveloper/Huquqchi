@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { Telegraf } from 'telegraf';
 import { MyContext } from '../bot/context';
 import { ChannelPostService } from './channelPostService';
+import { ExamScraperService } from './examScraperService';
 
 export class CronService {
   private static isInitialized = false;
@@ -10,7 +11,22 @@ export class CronService {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
-    console.log('⏰ Initializing Daily Cron Scheduler for @Huquq_study auto-posting (09:00 AM every morning)...');
+    console.log('⏰ Initializing Daily Cron Scheduler...');
+
+    // Initial immediate scraper run on boot
+    ExamScraperService.scrapeOfficialExamDates().catch((err) => {
+      console.warn('⚠️ Initial exam scraper run notice:', err?.message || err);
+    });
+
+    // Cron expression: 0 6 * * * (Every morning at 06:00 AM) - Scrape official exam dates
+    cron.schedule('0 6 * * *', async () => {
+      console.log('🔍 Executing scheduled daily exam date scraper for @uzbmb_rasmiy...');
+      try {
+        await ExamScraperService.scrapeOfficialExamDates();
+      } catch (err) {
+        console.error('Error in scheduled exam date scraper:', err);
+      }
+    });
 
     // Cron expression: 0 9 * * * (Every morning at 09:00 AM)
     cron.schedule('0 9 * * *', async () => {

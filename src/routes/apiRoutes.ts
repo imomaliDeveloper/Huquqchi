@@ -3,6 +3,7 @@ import prisma from '../database/prisma';
 import { AiService } from '../services/aiService';
 import { DocGeneratorService } from '../services/docGeneratorService';
 import { TtsService } from '../services/ttsService';
+import { ExamScraperService } from '../services/examScraperService';
 import { FULL_CONSTITUTION_DATA } from '../data/constitutionData';
 
 import bot from '../bot';
@@ -638,6 +639,22 @@ router.post('/doc/generate', async (req: Request, res: Response) => {
     res.send(pdfBuffer);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Hujjat generatsiya qilishda xatolik' });
+  }
+});
+
+// Get Official Target Exam Dates (Countdown Widget API)
+router.get('/exam-config', (req: Request, res: Response) => {
+  const config = ExamScraperService.getExamConfig();
+  res.json(config);
+});
+
+// Trigger Scraper to parse official Telegram channel @uzbmb_rasmiy
+router.post('/admin/scrape-exam-dates', async (req: Request, res: Response) => {
+  try {
+    const result = await ExamScraperService.scrapeOfficialExamDates();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

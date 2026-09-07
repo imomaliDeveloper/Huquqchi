@@ -1383,13 +1383,25 @@ function escapeHtml(str) {
 }
 
 // DTM & Milliy Sertifikat Live Countdown Timer
+let examTargetTimestamp = new Date('2026-07-15T08:00:00').getTime();
+
 function startExamCountdown() {
-  // Official target date: 2026 Season DTM Exam Start (July 15, 2026 08:00 AM)
-  const targetDate = new Date('2026-07-15T08:00:00').getTime();
+  // Fetch dynamically scraped official target date from backend API
+  fetch('/api/exam-config')
+    .then(res => res.json())
+    .then(config => {
+      if (config && config.targetDate) {
+        const parsed = new Date(config.targetDate).getTime();
+        if (!isNaN(parsed) && parsed > Date.now()) {
+          examTargetTimestamp = parsed;
+        }
+      }
+    })
+    .catch(() => {});
 
   function updateTimer() {
     const now = new Date().getTime();
-    const diff = targetDate - now;
+    const diff = examTargetTimestamp - now;
 
     const daysEl = document.getElementById('countdownDays');
     const hoursEl = document.getElementById('countdownHours');
