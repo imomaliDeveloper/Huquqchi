@@ -8,7 +8,7 @@ import { handleAiView, handleAiQuestionMessage } from './aiHandler';
 import { handleSearchView } from './searchHandler';
 import { handleAdminBroadcastExecute, handleAdminPdfDocumentMessage } from './adminHandler';
 import { handleCertView } from './certHandler';
-import { handleAdminQuizSteps } from './adminQuizHandler';
+import { handleAdminQuizSteps, handleAdminPollImport } from './adminQuizHandler';
 import { handleLegalServicesView, handleServiceApplicationSteps } from './legalServicesHandler';
 import { handleDocumentView, handleDocumentWizardSteps } from './documentHandler';
 import { handleLexSearchView, handleLexQuerySearch } from './lexSearchHandler';
@@ -19,6 +19,12 @@ import { handleRiskCheckView, handleRiskCheckMessage } from './riskCheckHandler'
 import { handleConstitutionView, handleAdminConstitutionAudioStep, handleConstitutionArticleDetails } from './constitutionHandler';
 
 export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<void>) {
+  // Check if Admin Quiz Import Mode is active (checked BEFORE AI routing so forwarded polls/text are saved to DB!)
+  if ((ctx.session as any)?.adminQuizImportCategory && ctx.message) {
+    const handled = await handleAdminPollImport(ctx);
+    if (handled) return;
+  }
+
   // Handle Admin Broadcast input if session active (checked BEFORE text check so media/forwards work)
   if ((ctx.session as any)?.adminBroadcastActive && ctx.message) {
     return handleAdminBroadcastExecute(ctx);

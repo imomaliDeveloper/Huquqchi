@@ -405,34 +405,66 @@ export async function handleAdminStopPollImport(ctx: MyContext) {
   }).catch(() => {});
 }
 
-export async function handleAdminPollImport(ctx: MyContext) {
-  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
+export async function handleAdminPollImport(ctx: MyContext): Promise<boolean> {
+  if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return false;
+
+  const categoryName = (ctx.session as any)?.adminQuizImportCategory;
+  if (!categoryName) return false;
 
   const poll = ctx.message && 'poll' in ctx.message ? ctx.message.poll : null;
-  if (!poll) return;
+  const msgText = ctx.message && 'text' in ctx.message ? ctx.message.text.trim() : (ctx.message && 'caption' in ctx.message ? (ctx.message as any).caption.trim() : '');
 
-  const question = poll.question;
-  const options = poll.options.map((o: any) => o.text);
+  let question = '';
+  let optionA = 'A';
+  let optionB = 'B';
+  let optionC = 'C';
+  let optionD = 'D';
+  let correctAnswer = 'A';
+  let explanation: string | null = null;
 
-  if (options.length < 2) {
-    return ctx.reply('⚠️ Test kamida 2 ta variantga ega bo‘lishi kerak.');
+  if (poll) {
+    question = poll.question;
+    const options = poll.options.map((o: any) => o.text);
+    optionA = options[0] || 'A';
+    optionB = options[1] || 'B';
+    optionC = options[2] || 'C';
+    optionD = options[3] || 'D';
+
+    const correctIndex = poll.correct_option_id !== undefined ? poll.correct_option_id : 0;
+    const letterMap = ['A', 'B', 'C', 'D'];
+    correctAnswer = letterMap[correctIndex] || 'A';
+    explanation = poll.explanation || null;
+  } else if (msgText) {
+    // If Admin forwarded or typed a text quiz message during import mode
+    const lines = msgText.split('\n').map((l: string) => l.trim()).filter(Boolean);
+    
+    // Attempt to extract options A), B), C), D) or A., B., C., D.
+    let foundA = lines.find((l: string) => /^a[).]/i.test(l));
+    let foundB = lines.find((l: string) => /^b[).]/i.test(l));
+    let foundC = lines.find((l: string) => /^c[).]/i.test(l));
+    let foundD = lines.find((l: string) => /^d[).]/i.test(l));
+
+    if (foundA) optionA = foundA.replace(/^a[).]\s*/i, '');
+    if (foundB) optionB = foundB.replace(/^b[).]\s*/i, '');
+    if (foundC) optionC = foundC.replace(/^c[).]\s*/i, '');
+    if (foundD) optionD = foundD.replace(/^d[).]\s*/i, '');
+
+    // Extract correct answer if stated in text
+    const ansMatch = msgText.match(/(?:to'g'ri\s*javob|javob|kalit|ans|key)\s*[:=-]?\s*([a-d])/i);
+    if (ansMatch && ansMatch[1]) {
+      correctAnswer = ansMatch[1].toUpperCase();
+    }
+
+    // Question is lines before options
+    const questionLines = lines.filter((l: string) => !/^[a-d][).]/i.test(l) && !/(?:to'g'ri\s*javob|javob|kalit)\s*[:=-]/i.test(l));
+    question = questionLines.join(' ') || msgText;
+  } else {
+    return false;
   }
 
-  const optionA = options[0] || 'A';
-  const optionB = options[1] || 'B';
-  const optionC = options[2] || 'C';
-  const optionD = options[3] || 'D';
-
-  const correctIndex = poll.correct_option_id !== undefined ? poll.correct_option_id : 0;
-  const letterMap = ['A', 'B', 'C', 'D'];
-  const correctAnswer = letterMap[correctIndex] || 'A';
-  const explanation = poll.explanation || null;
-
-  // Active category in session or fallback
-  const categoryName = (ctx.session as any)?.adminQuizImportCategory || 'DTM Imtihon Testlari';
-  const quizTitle = `${categoryName} Darslik Testlari`;
-
   try {
+    const quizTitle = `${categoryName} Darslik Testlari`;
+
     let quiz = await prisma.quiz.findFirst({
       where: { title: quizTitle },
     });
@@ -466,21 +498,23 @@ export async function handleAdminPollImport(ctx: MyContext) {
 
     const buttons = [[Markup.button.callback('❌ Import Rejimini Yopish', 'admin_stop_poll_import')]];
 
-    return ctx.reply(
+    await ctx.reply(
       `✅ <b>SAVOL BAZAGA MUVAFFAQIYATLI SAQLANDI! (#${totalCount})</b>\n\n` +
       `📌 <b>Bo‘lim:</b> <code>${escapeHTML(categoryName)}</code>\n` +
-      `❓ <b>Savol:</b> ${escapeHTML(question)}\n` +
+      `❓ <b>Savol:</b> ${escapeHTML(question.slice(0, 300))}\n` +
       `🅰️ ${escapeHTML(optionA)}\n` +
       `🅱️ ${escapeHTML(optionB)}\n` +
       `🅲️ ${escapeHTML(optionC)}\n` +
       `🅳️ ${escapeHTML(optionD)}\n\n` +
       `🎯 <b>To‘g‘ri javob:</b> <b>${correctAnswer}</b>\n\n` +
-      `💡 <i>Keyingi @QuizBot testini bemalol FORWARD qilishingiz mumkin!</i>`,
+      `💡 <i>Keyingi testni (Poll yoki Matn) bemalol FORWARD qilishingiz mumkin!</i>`,
       { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
     );
+    return true;
   } catch (error) {
     console.error('Error saving imported poll:', error);
-    return ctx.reply('⚠️ Savolni saqlashda xatolik yuz berdi.');
+    await ctx.reply('⚠️ Savolni saqlashda xatolik yuz berdi.');
+    return true;
   }
 }
 
