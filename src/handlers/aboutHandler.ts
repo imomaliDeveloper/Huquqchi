@@ -9,7 +9,8 @@ export async function handleAboutView(ctx: MyContext) {
     `• 💼 <b>Yuridik xizmatlar</b>: Professional advokatlar va yuristlarga rasmiy murojaat yuborish.\n` +
     `• 📚 <b>Huquqiy bilimlar</b>: Kodekslar, PDF kitoblar va qonunlar bo‘yicha tartiblangan maqolalar.\n` +
     `• 📝 <b>Testlar & Milliy Sertifikat</b>: Huquqiy bilimlaringizni sinash hamda DTM Milliy sertifikatiga tayyorgarlik.\n` +
-    `• 🔎 <b>Qidiruv</b>: Kerakli modda va mavzularni kalit so‘z orqali topish.`;
+    `• 🔎 <b>Qidiruv</b>: Kerakli modda va mavzularni kalit so‘z orqali topish.\n\n` +
+    `👨‍💻 <b>Support / Qo'llab-quvvatlash:</b> @Imomali_Mamatkulov`;
 
   return ctx.reply(text, { parse_mode: 'HTML' });
 }

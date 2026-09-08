@@ -47,14 +47,19 @@ async function bootstrap() {
 
     // Set official bot Description & About text (protects against external spam overrides)
     await bot.telegram.setMyDescription(
-      '⚖️ Huquqchi AI — Sizning 24/7 Shaxsiy Yuridik Yordamchingiz va Huquqiy Bilimlar Platformasi.\n\n' +
-      '🔹 O\'zbekiston Respublikasi Qonunchiligi bo\'yicha AI Yurist konsultatsiyasi\n' +
-      '🔹 Milliy Sertifikat va YET test sinovlari\n' +
-      '🔹 Rasmiy Qonunlar, Kodekslar va Shartnoma namunalari'
+      "⚖️ Huquqchi AI — O'zbekiston Respublikasi Qonunchiligi bo'yicha 24/7 Sun'iy Intellektual Yuridik Yordamchi va Huquqiy Bilimlar Platformasi.\n\n" +
+      "🤖 Bot imkoniyatlari:\n" +
+      "🔹 AI Yurist Konsultatsiyasi — Ovozli va matnli tezkor yuridik javoblar\n" +
+      "🚨 SOS Huquqiy Yordam — YPX, IIB va Soliq xodimlari to'xtatganda tezkor huquqlar\n" +
+      "🧮 Davlat Boji va Penya Kalkulyatori — Sud bojlari va qarzdorlikni aniq hisoblash\n" +
+      "🎓 Milliy Sertifikat & YET — 30-talik DTM imtihon testlari va PDF darsliklar\n" +
+      "📄 Hujjat Yaratuvchi — Shartnoma va arizalarni avtomatik PDF shaklda tuzish\n" +
+      "🎧 Konstitutsiya & Lex.uz — Rasmiy kodekslar va audio moddalar bazasi\n\n" +
+      "👨‍💻 Qo'llab-quvvatlash va Murojaat: @Imomali_Mamatkulov"
     ).catch(() => {});
 
     await bot.telegram.setMyShortDescription(
-      '⚖️ O\'zbekiston Qonunchiligi va AI Yuristik Konsultatsiya Boti'
+      "⚖️ O'zbekiston Qonunchiligi & AI Yuristik Konsultatsiya Boti.\n\nSupport: @Imomali_Mamatkulov"
     ).catch(() => {});
 
     // Set Telegram Chat Menu Button to live Cloudflare Mini App URL
