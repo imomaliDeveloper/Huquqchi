@@ -97,6 +97,7 @@ import {
 } from '../handlers/constitutionHandler';
 import { handleSosView, handleSosTopic } from '../handlers/sosHandler';
 import { handleCalculatorView, handleCalcSelection, handleCalcCalculation } from '../handlers/calculatorHandler';
+import { handleLexSearchView, handleCodexDetails, handleCodexSubTopic } from '../handlers/lexSearchHandler';
 
 const botToken = (process.env.BOT_TOKEN || config.botToken || '').replace(/['"]/g, '').trim();
 export const bot = new Telegraf<MyContext>(botToken);
@@ -159,6 +160,11 @@ export function setupBotHandlers() {
   bot.action(/^calc_penya_preset_(\d+)_(\d+)$/, (ctx) =>
     handleCalcCalculation(ctx, 'penya', parseInt(ctx.match[1]!, 10), parseInt(ctx.match[2]!, 10))
   );
+
+  // Lex.uz Top 5 Codes actions
+  bot.action('lex_home', handleLexSearchView);
+  bot.action(/^lex_code_(mk|fk|ok|mjtk|sk)$/, (ctx) => handleCodexDetails(ctx, ctx.match[1]!));
+  bot.action(/^lex_topic_(.+)$/, (ctx) => handleCodexSubTopic(ctx, ctx.match[1]!));
 
   // Force Subscribe & Risk Check actions
   bot.action('check_sub', (ctx) => SubCheckService.handleCheckSubCallback(ctx));
