@@ -210,7 +210,6 @@ export function setupBotHandlers() {
   // VIP Payment actions
   bot.action('buy_pro_card_monthly', (ctx) => handlePaymentCardInfo(ctx, 'PRO_MONTHLY'));
   bot.action('buy_pro_card_yearly', (ctx) => handlePaymentCardInfo(ctx, 'PRO_YEARLY'));
-  bot.action('buy_pro_auto_monthly', (ctx) => handlePaymentProcess(ctx, 'PRO_MONTHLY'));
   bot.action(/^admin_approve_pay_(\d+)_(.+)$/, (ctx) =>
     handleAdminApprovePayment(ctx, parseInt(ctx.match[1]!, 10), ctx.match[2]! as any)
   );

@@ -39,7 +39,6 @@ export async function handlePaymentView(ctx: MyContext) {
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('💳 1 Oylik PRO (29,000 UZS)', 'buy_pro_card_monthly')],
     [Markup.button.callback('🌟 1 Yillik PRO (199,000 UZS)', 'buy_pro_card_yearly')],
-    [Markup.button.callback('⚡️ Instant Auto-Activate (Demo)', 'buy_pro_auto_monthly')],
   ]);
 
   return ctx.reply(html, { parse_mode: 'HTML', ...keyboard });
