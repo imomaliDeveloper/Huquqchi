@@ -96,7 +96,7 @@ import {
   handleAdminConstitutionAudioClear,
 } from '../handlers/constitutionHandler';
 
-const botToken = (process.env.BOT_TOKEN || config.botToken || '8708913937:AAFxVGita3lGuBLm1xgIWGdzhXh-SrEko7c').replace(/['"]/g, '').trim();
+const botToken = (process.env.BOT_TOKEN || config.botToken || '').replace(/['"]/g, '').trim();
 export const bot = new Telegraf<MyContext>(botToken);
 
 // Register core middlewares

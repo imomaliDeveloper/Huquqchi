@@ -45,6 +45,18 @@ async function bootstrap() {
       { command: 'pro', description: 'VIP PRO Obuna' },
     ]).catch(() => {});
 
+    // Set official bot Description & About text (protects against external spam overrides)
+    await bot.telegram.setMyDescription(
+      '⚖️ Huquqchi AI — Sizning 24/7 Shaxsiy Yuridik Yordamchingiz va Huquqiy Bilimlar Platformasi.\n\n' +
+      '🔹 O\'zbekiston Respublikasi Qonunchiligi bo\'yicha AI Yurist konsultatsiyasi\n' +
+      '🔹 Milliy Sertifikat va YET test sinovlari\n' +
+      '🔹 Rasmiy Qonunlar, Kodekslar va Shartnoma namunalari'
+    ).catch(() => {});
+
+    await bot.telegram.setMyShortDescription(
+      '⚖️ O\'zbekiston Qonunchiligi va AI Yuristik Konsultatsiya Boti'
+    ).catch(() => {});
+
     // Set Telegram Chat Menu Button to live Cloudflare Mini App URL
     const miniAppUrl = process.env.MINI_APP_URL || 'https://huquqchi-lovat.vercel.app';
     await bot.telegram.setChatMenuButton({
