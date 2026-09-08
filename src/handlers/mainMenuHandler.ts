@@ -17,6 +17,8 @@ import { handleReferralView } from './referralHandler';
 import { handleTextbooksView } from './textbookHandler';
 import { handleRiskCheckView, handleRiskCheckMessage } from './riskCheckHandler';
 import { handleConstitutionView, handleAdminConstitutionAudioStep, handleConstitutionArticleDetails } from './constitutionHandler';
+import { handleSosView } from './sosHandler';
+import { handleCalculatorView, handleCalcTextInput } from './calculatorHandler';
 
 export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<void>) {
   // Check if Admin Quiz Import Mode is active (checked BEFORE AI routing so forwarded polls/text/QuizBot posts are saved to DB!)
@@ -28,6 +30,15 @@ export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<
   // Handle Admin Broadcast input if session active (checked BEFORE text check so media/forwards work)
   if ((ctx.session as any)?.adminBroadcastActive && ctx.message) {
     return handleAdminBroadcastExecute(ctx);
+  }
+
+  // Check if Legal Calculator custom amount input is active
+  if ((ctx.session as any)?.calcState && ctx.message && 'text' in ctx.message) {
+    const text = ctx.message.text.trim();
+    if (!text.startsWith('/')) {
+      const handled = await handleCalcTextInput(ctx, text);
+      if (handled) return;
+    }
   }
 
   // Check if AI Contract Risk Check step is active
@@ -83,6 +94,12 @@ export async function handleMainMenuRouting(ctx: MyContext, next: () => Promise<
   switch (text) {
     case MAIN_MENU_BUTTONS.AI_CONSULTANT:
       return handleAiView(ctx);
+
+    case MAIN_MENU_BUTTONS.SOS_HELP:
+      return handleSosView(ctx);
+
+    case MAIN_MENU_BUTTONS.CALCULATOR:
+      return handleCalculatorView(ctx);
 
     case MAIN_MENU_BUTTONS.RISK_CHECK:
       return handleRiskCheckView(ctx);

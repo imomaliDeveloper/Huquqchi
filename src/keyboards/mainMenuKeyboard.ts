@@ -4,7 +4,8 @@ export function getMainMenuKeyboard() {
   const miniAppUrl = process.env.MINI_APP_URL || 'https://huquqchi-lovat.vercel.app';
   return Markup.keyboard([
     [Markup.button.webApp('🚀 Huquqchi Mini App (Web UI)', miniAppUrl)],
-    ['⚖️ Huquqiy AI', '🛡 AI Shartnoma Ekspertizasi'],
+    ['⚖️ Huquqiy AI', '🚨 SOS Huquqiy Yordam'],
+    ['🧮 Yuridik Kalkulyatorlar', '🛡 AI Shartnoma Ekspertizasi'],
     ['🎧 Konstitutsiya (Audio & Matn)', '📄 Hujjat yaratish'],
     ['🔍 Lex.uz Kodekslar', '📖 Huquqiy Darsliklar'],
     ['🎓 Milliy Sertifikat', '📝 Testlar'],
@@ -16,6 +17,8 @@ export function getMainMenuKeyboard() {
 
 export const MAIN_MENU_BUTTONS = {
   AI_CONSULTANT: '⚖️ Huquqiy AI',
+  SOS_HELP: '🚨 SOS Huquqiy Yordam',
+  CALCULATOR: '🧮 Yuridik Kalkulyatorlar',
   RISK_CHECK: '🛡 AI Shartnoma Ekspertizasi',
   CONSTITUTION: '🎧 Konstitutsiya (Audio & Matn)',
   DOCUMENT_GENERATOR: '📄 Hujjat yaratish',

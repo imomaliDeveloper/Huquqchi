@@ -95,6 +95,8 @@ import {
   handleAdminConstitutionAudioStart,
   handleAdminConstitutionAudioClear,
 } from '../handlers/constitutionHandler';
+import { handleSosView, handleSosTopic } from '../handlers/sosHandler';
+import { handleCalculatorView, handleCalcSelection, handleCalcCalculation } from '../handlers/calculatorHandler';
 
 const botToken = (process.env.BOT_TOKEN || config.botToken || '').replace(/['"]/g, '').trim();
 export const bot = new Telegraf<MyContext>(botToken);
@@ -143,6 +145,20 @@ export function setupBotHandlers() {
     await ctx.answerCbQuery('🎉 Ommaviy yuklash yakunlandi!').catch(() => {});
     return ctx.reply(`🎉 <b>Ommaviy audio yuklash yakunlandi!</b> Jami <b>${count} ta</b> modda audiosi saqlandi.`, { parse_mode: 'HTML' });
   });
+
+  // SOS Emergency Legal Help actions
+  bot.action('sos_home', handleSosView);
+  bot.action(/^sos_(ypx|iib|tax|search|rights|phones)$/, (ctx) => handleSosTopic(ctx, ctx.match[1]!));
+
+  // Legal Calculator actions
+  bot.action('calc_home', handleCalculatorView);
+  bot.action(/^calc_(civil|econ|admin|penya)$/, (ctx) => handleCalcSelection(ctx, ctx.match[1]!));
+  bot.action(/^calc_(civil|econ)_val_(\d+)$/, (ctx) =>
+    handleCalcCalculation(ctx, ctx.match[1]! as any, parseInt(ctx.match[2]!, 10))
+  );
+  bot.action(/^calc_penya_preset_(\d+)_(\d+)$/, (ctx) =>
+    handleCalcCalculation(ctx, 'penya', parseInt(ctx.match[1]!, 10), parseInt(ctx.match[2]!, 10))
+  );
 
   // Force Subscribe & Risk Check actions
   bot.action('check_sub', (ctx) => SubCheckService.handleCheckSubCallback(ctx));
