@@ -17,6 +17,7 @@ export async function handleCertView(ctx: MyContext) {
     `Quyidagi bo‘limlardan birini tanlang:`;
 
   const buttons = [
+    [Markup.button.callback('📑 Huquq Milliy Sertifikat Testlar (Pullik PDF)', 'cert_huquq_tests')],
     [Markup.button.callback('📚 PDF Qo‘llanmalar & DTM Testlar', 'cert_pdf_books')],
     [Markup.button.callback('📝 Imtihon Simulyatsiyasini Topshirish', 'cert_exam_start')],
     [Markup.button.callback('📊 Mening Sertifikatlarim & Natijalarim', 'cert_my_results')],
@@ -72,6 +73,76 @@ export async function handleCertPdfBooksList(ctx: MyContext) {
 
   let text = formatHeader('📚 Milliy Sertifikat PDF Qo‘llanmalar & Testlar');
   text += `Ushbu bo‘limda DTM Huquqshunoslik imtihoni uchun eng sara PDF qo‘llanma va test to‘plamlari mavjud:\n\n`;
+
+  const inlineButtons: any[] = [];
+
+  articles.forEach((art, idx) => {
+    const priceText = art.price > 0 ? `${art.price.toLocaleString('uz-UZ')} UZS` : 'BEPUL';
+    text += `<b>${idx + 1}. 📄 ${escapeHTML(art.title)}</b>\n`;
+    text += `📝 <i>${escapeHTML(art.content)}</i>\n`;
+    text += `🏷 <b>Narxi:</b> <code>${isPro ? 'BEPUL (VIP PRO)' : priceText}</code>\n${formatSectionDivider()}\n`;
+
+    if (isPro || art.price === 0) {
+      inlineButtons.push([Markup.button.callback(`📥 Yuklab Olish: ${art.title.slice(0, 20)}...`, `dl_pdf_${art.id}`)]);
+    } else {
+      inlineButtons.push([Markup.button.callback(`💳 Sotib Olish (${priceText}): ${art.title.slice(0, 15)}...`, `cert_buy_pdf_${art.id}`)]);
+    }
+  });
+
+  inlineButtons.push([Markup.button.callback('🔙 Ortga', 'cert_home')]);
+
+  return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) }).catch(() => {});
+}
+
+export async function handleCertHuquqTestsList(ctx: MyContext) {
+  await ctx.answerCbQuery().catch(() => {});
+
+  const isPro = ctx.user?.isPro || false;
+
+  // Find or create category for Huquq Milliy Sertifikat Testlari
+  let cat = await prisma.category.findUnique({ where: { name: '📄 Huquq Milliy Sertifikat Testlari' } });
+  if (!cat) {
+    cat = await prisma.category.create({
+      data: {
+        name: '📄 Huquq Milliy Sertifikat Testlari',
+        description: 'Huquqshunoslik bo‘yicha Milliy sertifikat rasmiy va tahliliy pullik PDF test to‘plamlari',
+      },
+    });
+  }
+
+  // Find articles under this category
+  let articles = await prisma.legalArticle.findMany({
+    where: { categoryId: cat.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Seed sample test materials if empty
+  if (articles.length === 0) {
+    const sample1 = await prisma.legalArticle.create({
+      data: {
+        title: 'Huquq Milliy Sertifikat 2026 PDF Test To‘plami (500 ta Savol + Javoblar)',
+        content: 'O‘zR DTM hamda Adliya vazirligi formati bo‘yicha 500 ta rasmiy va tahliliy Huquq milliy sertifikat testlari to‘plami va to‘liq javoblar sharhi.',
+        categoryId: cat.id,
+        isPdfBook: true,
+        fileType: 'pdf_quiz',
+        price: 20000,
+      },
+    });
+    const sample2 = await prisma.legalArticle.create({
+      data: {
+        title: 'Huquqshunoslik Milliy Sertifikat DTM Blok Testlari (300 ta Kazus + Tahlil)',
+        content: 'Konstitutsiyaviy, Fuqarolik, Mehnat va Jinoyat huquqiga oid murakkab kazusli testlar to‘plami va javob kaliti.',
+        categoryId: cat.id,
+        isPdfBook: true,
+        fileType: 'pdf_quiz',
+        price: 15000,
+      },
+    });
+    articles = [sample1, sample2];
+  }
+
+  let text = formatHeader('📑 HUQUQ MILLIY SERTIFIKAT TESTLAR');
+  text += `Ushbu bo‘limda Huquqshunoslik bo‘yicha Milliy Sertifikat imtihoniga tayyorgarlik ko‘rish uchun maxsus tayyorlangan <b>pullik PDF test to‘plamlari</b> mavjud:\n\n`;
 
   const inlineButtons: any[] = [];
 

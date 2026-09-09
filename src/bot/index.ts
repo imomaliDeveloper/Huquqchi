@@ -43,6 +43,7 @@ import {
   handleCertExamAnswer,
   handleCertMyResults,
   handleCertPdfBooksList,
+  handleCertHuquqTestsList,
   handleCertBuyPdfPrompt,
   handleCertInfoPage,
 } from '../handlers/certHandler';
@@ -128,6 +129,7 @@ export function setupBotHandlers() {
   bot.action('admin_post_channel_digest', (ctx) => handleAdminPostChannelExecute(ctx, 'digest'));
   bot.action('admin_users', handleAdminUsers);
   bot.action('admin_broadcast', handleAdminBroadcastPrompt);
+  bot.action('admin_upload_huquq_cert_test', (ctx) => handleAdminPdfUploadPrompt(ctx, false, false, false, true));
   bot.action('admin_upload_cert_pdf', (ctx) => handleAdminPdfUploadPrompt(ctx, true, false, false));
   bot.action('admin_upload_textbook', (ctx) => handleAdminPdfUploadPrompt(ctx, false, true, false));
   bot.action('admin_upload_pdf_quiz', (ctx) => handleAdminPdfUploadPrompt(ctx, false, false, true));
@@ -254,6 +256,7 @@ export function setupBotHandlers() {
   bot.action('cert_info_page_1', (ctx) => handleCertInfoPage(ctx, 1));
   bot.action('cert_info_page_2', (ctx) => handleCertInfoPage(ctx, 2));
   bot.action('cert_pdf_books', handleCertPdfBooksList);
+  bot.action('cert_huquq_tests', handleCertHuquqTestsList);
   bot.action(/^cert_buy_pdf_(\d+)$/, (ctx) => handleCertBuyPdfPrompt(ctx, parseInt(ctx.match[1]!, 10)));
   bot.action('cert_exam_start', handleCertExamStart);
   bot.action('cert_my_results', handleCertMyResults);

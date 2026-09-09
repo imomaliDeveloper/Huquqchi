@@ -14,6 +14,7 @@ export interface AdminPdfUploadSession {
   fileName?: string;
   categoryId?: number;
   isCert?: boolean;
+  isHuquqCertTest?: boolean;
   isTextbook?: boolean;
   isQuiz?: boolean;
 }
@@ -54,6 +55,7 @@ export async function handleAdminCommand(ctx: MyContext) {
     [Markup.button.callback('🗑 Quiz Testlarni Boshqarish & O‘chirish', 'admin_manage_quizzes')],
     [Markup.button.callback('💰 Sotuvlar & Daromad Hisoboti', 'admin_revenue')],
     [Markup.button.callback('📥 Foydalanuvchilarni CSV Export qilish', 'admin_export_csv')],
+    [Markup.button.callback('📑 Huquq Milliy Sertifikat PDF Test Yuklash (Pullik)', 'admin_upload_huquq_cert_test')],
     [Markup.button.callback('🎓 Milliy Sertifikat PDF Qo‘llanma Yuklash', 'admin_upload_cert_pdf')],
     [Markup.button.callback('📥 @QuizBot Testlarini Import Qilish', 'admin_start_poll_import')],
     [Markup.button.callback('📝 Yangi Test Yaratish', 'admin_create_quiz')],
@@ -191,7 +193,7 @@ export async function handleAdminExportCsv(ctx: MyContext) {
   );
 }
 
-export async function handleAdminPdfUploadPrompt(ctx: MyContext, isCert = false, isTextbook = false, isQuiz = false) {
+export async function handleAdminPdfUploadPrompt(ctx: MyContext, isCert = false, isTextbook = false, isQuiz = false, isHuquqCertTest = false) {
   await ctx.answerCbQuery().catch(() => {});
   if (!ctx.from || !(await AdminService.isAdmin(ctx.from.id))) return;
 
@@ -199,6 +201,7 @@ export async function handleAdminPdfUploadPrompt(ctx: MyContext, isCert = false,
   (ctx.session as any).adminPdfUpload = {
     step: 'AWAITING_FILE',
     isCert,
+    isHuquqCertTest,
     isTextbook,
     isQuiz,
   } as AdminPdfUploadSession;
@@ -208,7 +211,10 @@ export async function handleAdminPdfUploadPrompt(ctx: MyContext, isCert = false,
   let title = '📚 PDF KITOB YOKI MANBA YUKLASH';
   let helpText = 'Iltimos, **PDF kitob** yoki manba faylingizni botga yuboring (Document shaklida):';
 
-  if (isQuiz) {
+  if (isHuquqCertTest) {
+    title = '📑 HUQUQ MILLIY SERTIFIKAT PULLIK PDF TEST YUKLASH';
+    helpText = 'Iltimos, "Huquq Milliy Sertifikat Testlar" bo‘limiga qo‘shmoqchi bo‘lgan **pullik PDF test faylini** botga yuboring (Document shaklida):';
+  } else if (isQuiz) {
     title = '📄 PDF TEST VA SAVOLNOMA YUKLASH';
     helpText = 'Iltimos, "PDF Testlar va Savolnomalar" bo‘limiga qo‘shmoqchi bo‘lgan **PDF test faylini** botga yuboring (Document shaklida):';
   } else if (isTextbook) {
@@ -238,7 +244,15 @@ export async function handleAdminPdfDocumentMessage(ctx: MyContext, next: () => 
 
     try {
       let categoryId = uploadSession.categoryId;
-      if (uploadSession.isCert && !categoryId) {
+      if (uploadSession.isHuquqCertTest && !categoryId) {
+        let huquqCat = await prisma.category.findUnique({ where: { name: '📄 Huquq Milliy Sertifikat Testlari' } });
+        if (!huquqCat) {
+          huquqCat = await prisma.category.create({
+            data: { name: '📄 Huquq Milliy Sertifikat Testlari', description: 'Huquqshunoslik bo‘yicha Milliy sertifikat rasmiy va tahliliy pullik PDF test to‘plamlari' },
+          });
+        }
+        categoryId = huquqCat.id;
+      } else if (uploadSession.isCert && !categoryId) {
         let certCat = await prisma.category.findUnique({ where: { name: '🎓 Milliy Sertifikat Materiallari' } });
         if (!certCat) {
           certCat = await prisma.category.create({
@@ -253,14 +267,16 @@ export async function handleAdminPdfDocumentMessage(ctx: MyContext, next: () => 
       await prisma.legalArticle.create({
         data: {
           title: uploadSession.fileName || 'PDF Qo‘llanma.pdf',
-          content: uploadSession.isQuiz
+          content: uploadSession.isHuquqCertTest
+            ? `Huquq Milliy Sertifikat Testlar bo‘limi uchun yuklangan pullik PDF test to‘plami.`
+            : uploadSession.isQuiz
             ? `PDF Testlar va Savolnomalar bo‘limi uchun yuklangan test to‘plami.`
             : uploadSession.isCert
             ? `Milliy Sertifikat imtihoniga tayyorgarlik uchun PDF o‘quv qo‘llanmasi va testlar to‘plami.`
             : `Ushbu kitob "${category?.name || 'Kutubxona'}" bo‘limi uchun PDF o‘quv manbasi sifatida yuklangan.`,
           source: 'Admin tomonidan yuklangan PDF manba',
           fileId: uploadSession.fileId,
-          fileType: uploadSession.isQuiz ? 'pdf_quiz' : 'pdf',
+          fileType: uploadSession.isHuquqCertTest || uploadSession.isQuiz ? 'pdf_quiz' : 'pdf',
           isPdfBook: true,
           price: priceAmount,
           categoryId: categoryId!,
@@ -273,11 +289,11 @@ export async function handleAdminPdfDocumentMessage(ctx: MyContext, next: () => 
       const priceText = priceAmount > 0 ? `${priceAmount.toLocaleString('uz-UZ')} UZS` : 'BEPUL';
 
       return ctx.reply(
-        `🎉 <b>PDF QO‘LLANMA DASTURGA QO‘SHILDI!</b>\n\n` +
-        `📖 <b>Kitob/Qo‘llanma:</b> ${escapeHTML(uploadSession.fileName)}\n` +
-        `📂 <b>Kategoriya:</b> ${escapeHTML(category?.name || 'Milliy Sertifikat')}\n` +
+        `🎉 <b>PDF TEST/QO‘LLANMA DASTURGA QO‘SHILDI!</b>\n\n` +
+        `📖 <b>Kitob/Test:</b> ${escapeHTML(uploadSession.fileName)}\n` +
+        `📂 <b>Kategoriya:</b> ${escapeHTML(category?.name || 'Huquq Milliy Sertifikat Testlari')}\n` +
         `🏷 <b>Belgilangan Narx:</b> <code>${priceText}</code>\n\n` +
-        `Ushbu PDF fayl endi foydalanuvchilarga ko‘rinadi va belgilangan narxda karta orqali sotiladi! 🚀`,
+        `Ushbu PDF fayl endi "🎓 Milliy Sertifikat -> 📑 Huquq Milliy Sertifikat Testlar" bo‘limida foydalanuvchilarga ko‘rinadi va karta orqali sotiladi! 🚀`,
         { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }
       );
     } catch (err) {
@@ -297,12 +313,12 @@ export async function handleAdminPdfDocumentMessage(ctx: MyContext, next: () => 
       uploadSession.fileId = fileId;
       uploadSession.fileName = fileName;
 
-      if (uploadSession.isCert) {
+      if (uploadSession.isCert || uploadSession.isHuquqCertTest) {
         uploadSession.step = 'AWAITING_PRICE';
         return ctx.reply(
           `✅ <b>"${escapeHTML(fileName)}"</b> fayli qabul qilindi!\n\n` +
-          `💰 <b>Ushbu PDF qo‘llanma uchun sotuv narxini kiriting (so‘mda):</b>\n\n` +
-          `<i>Misol: 15000 (bepul qilmoqchi bo‘lsangiz 0 yuboring)</i>`,
+          `💰 <b>Ushbu PDF test/qo‘llanma uchun sotuv narxini kiriting (so‘mda):</b>\n\n` +
+          `<i>Misol: 20000 (bepul qilmoqchi bo‘lsangiz 0 yuboring)</i>`,
           { parse_mode: 'HTML' }
         );
       } else {
