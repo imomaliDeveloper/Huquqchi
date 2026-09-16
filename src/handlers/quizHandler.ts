@@ -75,7 +75,53 @@ export async function handleInteractiveQuizCategory(ctx: MyContext, categoryName
   await ctx.answerCbQuery().catch(() => {});
   try {
     let whereClause: any = {};
-    if (categoryName !== 'ALL') {
+    if (categoryName === 'ALL') {
+      whereClause = {};
+    } else if (categoryName.includes('Milliy')) {
+      whereClause = {
+        OR: [
+          { category: { contains: 'Milliy' } },
+          { title: { contains: 'Milliy' } },
+          { description: { contains: 'Milliy' } },
+        ],
+      };
+    } else if (categoryName.includes('DTM')) {
+      whereClause = {
+        OR: [
+          { category: { contains: 'DTM' } },
+          { title: { contains: 'DTM' } },
+          { description: { contains: 'DTM' } },
+        ],
+      };
+    } else if (categoryName.includes('8-sinf')) {
+      whereClause = {
+        OR: [
+          { category: { contains: '8' } },
+          { title: { contains: '8' } },
+        ],
+      };
+    } else if (categoryName.includes('9-sinf')) {
+      whereClause = {
+        OR: [
+          { category: { contains: '9' } },
+          { title: { contains: '9' } },
+        ],
+      };
+    } else if (categoryName.includes('10-sinf')) {
+      whereClause = {
+        OR: [
+          { category: { contains: '10' } },
+          { title: { contains: '10' } },
+        ],
+      };
+    } else if (categoryName.includes('11-sinf')) {
+      whereClause = {
+        OR: [
+          { category: { contains: '11' } },
+          { title: { contains: '11' } },
+        ],
+      };
+    } else {
       whereClause = {
         OR: [
           { category: categoryName },
@@ -96,7 +142,12 @@ export async function handleInteractiveQuizCategory(ctx: MyContext, categoryName
       const msg =
         `📂 <b>${escapeHTML(categoryName).toUpperCase()} TESTLARI</b>\n\n` +
         `<i>Hozircha ushbu bo‘limda testlar mavjud emas. Admin tomonidan tez orada yuklanadi!</i>`;
-      return ctx.editMessageText(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(emptyButtons) }).catch(() => {});
+      if (ctx.callbackQuery) {
+        return ctx.editMessageText(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(emptyButtons) }).catch(() => {
+          return ctx.reply(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(emptyButtons) });
+        });
+      }
+      return ctx.reply(msg, { parse_mode: 'HTML', ...Markup.inlineKeyboard(emptyButtons) });
     }
 
     const buttons = quizzes.map((quiz) => {
@@ -142,6 +193,8 @@ export async function handlePdfQuizHome(ctx: MyContext) {
           { name: { contains: 'PDF' } },
           { name: { contains: 'DTM' } },
           { name: { contains: 'Test' } },
+          { name: { contains: 'Milliy' } },
+          { name: { contains: 'Sertifikat' } },
         ],
       },
       include: { _count: { select: { articles: true } } },
@@ -170,6 +223,8 @@ export async function handlePdfQuizHome(ctx: MyContext) {
             { name: { contains: 'PDF' } },
             { name: { contains: 'DTM' } },
             { name: { contains: 'Test' } },
+            { name: { contains: 'Milliy' } },
+            { name: { contains: 'Sertifikat' } },
           ],
         },
         include: { _count: { select: { articles: true } } },

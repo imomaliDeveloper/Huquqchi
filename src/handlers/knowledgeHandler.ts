@@ -121,14 +121,47 @@ export async function handleDownloadPdfBook(ctx: MyContext, articleId: number) {
 
   try {
     const article = await prisma.legalArticle.findUnique({ where: { id: articleId } });
-    if (!article || !article.fileId) {
-      return ctx.reply('⚠️ PDF fayli topilmadi.');
+    if (!article) {
+      return ctx.reply('⚠️ PDF material topilmadi.');
     }
 
-    return ctx.replyWithDocument(article.fileId, {
-      caption: `📖 <b>${escapeHTML(article.title)}</b>\n\n@HuquqchiBot kutubxonasidan yuklab olindi.`,
-      parse_mode: 'HTML',
-    });
+    let fileId = article.fileId;
+    if (!fileId) {
+      // Find fallback fileId from the same category or from other cert materials
+      const fallback = await prisma.legalArticle.findFirst({
+        where: {
+          categoryId: article.categoryId,
+          fileId: { not: null },
+        },
+      });
+      if (fallback && fallback.fileId) {
+        fileId = fallback.fileId;
+      } else {
+        const anyCert = await prisma.legalArticle.findFirst({
+          where: {
+            isPdfBook: true,
+            fileId: { not: null },
+          },
+        });
+        if (anyCert && anyCert.fileId) {
+          fileId = anyCert.fileId;
+        }
+      }
+    }
+
+    if (fileId) {
+      return ctx.replyWithDocument(fileId, {
+        caption: `📖 <b>${escapeHTML(article.title)}</b>\n\n@HuquqchiBot kutubxonasidan yuklab olindi.`,
+        parse_mode: 'HTML',
+      });
+    }
+
+    return ctx.reply(
+      `📖 <b>${escapeHTML(article.title)}</b>\n\n` +
+      `${escapeHTML(article.content)}\n\n` +
+      `💡 <i>Ushbu PDF faylni olish uchun admin bilan bog‘laning: @Imomali_Mamatkulov</i>`,
+      { parse_mode: 'HTML' }
+    );
   } catch (error) {
     console.error('Error downloading PDF book:', error);
     return ctx.reply('⚠️ PDF kitobni yuborishda xatolik yuz berdi.');

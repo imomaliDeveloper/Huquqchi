@@ -26,7 +26,9 @@ export async function handleCertView(ctx: MyContext) {
 
   if (ctx.callbackQuery) {
     await ctx.answerCbQuery().catch(() => {});
-    return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }).catch(() => {});
+    return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) }).catch(() => {
+      return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
+    });
   }
 
   return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) });
@@ -37,27 +39,38 @@ export async function handleCertPdfBooksList(ctx: MyContext) {
 
   const isPro = ctx.user?.isPro || false;
 
-  // Find or create category for Milliy Sertifikat Materiallari
-  let cat = await prisma.category.findUnique({ where: { name: '🎓 Milliy Sertifikat Materiallari' } });
-  if (!cat) {
-    cat = await prisma.category.create({
-      data: {
-        name: '🎓 Milliy Sertifikat Materiallari',
-        description: 'DTM Huquqshunoslik milliy sertifikatiga tayyorgarlik PDF testlari va qo‘llanmalar',
-      },
-    });
-  }
+  // Find categories for Milliy Sertifikat & preparation materials
+  const certCats = await prisma.category.findMany({
+    where: {
+      OR: [
+        { name: { contains: 'Milliy Sertifikat' } },
+        { name: { contains: 'DTMB' } },
+        { name: { contains: 'OTM Qabul' } },
+      ],
+    },
+    select: { id: true },
+  });
+  const catIds = certCats.map((c) => c.id);
 
-  // Find articles under this category or PDF books
   let articles = await prisma.legalArticle.findMany({
     where: {
-      OR: [{ categoryId: cat.id }, { isPdfBook: true }],
+      categoryId: { in: catIds },
     },
     orderBy: { createdAt: 'desc' },
   });
 
   // Seed sample materials if empty
   if (articles.length === 0) {
+    let cat = await prisma.category.findFirst({ where: { name: { contains: 'Milliy Sertifikat' } } });
+    if (!cat) {
+      cat = await prisma.category.create({
+        data: {
+          name: '🎓 Milliy Sertifikat Materiallari',
+          description: 'DTM Huquqshunoslik milliy sertifikatiga tayyorgarlik PDF testlari va qo‘llanmalar',
+        },
+      });
+    }
+
     const sampleArticle = await prisma.legalArticle.create({
       data: {
         title: 'DTM Huquqshunoslik Milliy Sertifikat 2026 Qomusiy Qo‘llanma',
@@ -72,26 +85,36 @@ export async function handleCertPdfBooksList(ctx: MyContext) {
   }
 
   let text = formatHeader('📚 Milliy Sertifikat PDF Qo‘llanmalar & Testlar');
-  text += `Ushbu bo‘limda DTM Huquqshunoslik imtihoni uchun eng sara PDF qo‘llanma va test to‘plamlari mavjud:\n\n`;
+  text += `Ushbu bo‘limda DTM Huquqshunoslik imtihoni uchun sara PDF qo‘llanma va test to‘plamlari mavjud:\n\n`;
 
   const inlineButtons: any[] = [];
 
   articles.forEach((art, idx) => {
     const priceText = art.price > 0 ? `${art.price.toLocaleString('uz-UZ')} UZS` : 'BEPUL';
-    text += `<b>${idx + 1}. 📄 ${escapeHTML(art.title)}</b>\n`;
-    text += `📝 <i>${escapeHTML(art.content)}</i>\n`;
+    const displayTitle = art.title.length > 50 ? art.title.slice(0, 47) + '...' : art.title;
+    const desc = art.content.length > 120 ? art.content.slice(0, 117) + '...' : art.content;
+
+    text += `<b>${idx + 1}. 📄 ${escapeHTML(displayTitle)}</b>\n`;
+    text += `📝 <i>${escapeHTML(desc)}</i>\n`;
     text += `🏷 <b>Narxi:</b> <code>${isPro ? 'BEPUL (VIP PRO)' : priceText}</code>\n${formatSectionDivider()}\n`;
 
+    const buttonLabel = displayTitle.slice(0, 22);
     if (isPro || art.price === 0) {
-      inlineButtons.push([Markup.button.callback(`📥 Yuklab Olish: ${art.title.slice(0, 20)}...`, `dl_pdf_${art.id}`)]);
+      inlineButtons.push([Markup.button.callback(`📥 Yuklab Olish: ${buttonLabel}`, `dl_pdf_${art.id}`)]);
     } else {
-      inlineButtons.push([Markup.button.callback(`💳 Sotib Olish (${priceText}): ${art.title.slice(0, 15)}...`, `cert_buy_pdf_${art.id}`)]);
+      inlineButtons.push([Markup.button.callback(`💳 Sotib Olish (${priceText}): ${buttonLabel}`, `cert_buy_pdf_${art.id}`)]);
     }
   });
 
-  inlineButtons.push([Markup.button.callback('🔙 Ortga', 'cert_home')]);
+  inlineButtons.push([Markup.button.callback('🔙 Sertifikat Bo‘limi', 'cert_home')]);
 
-  return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) }).catch(() => {});
+  if (ctx.callbackQuery) {
+    return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) }).catch(() => {
+      return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) });
+    });
+  }
+
+  return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) });
 }
 
 export async function handleCertHuquqTestsList(ctx: MyContext) {
@@ -99,30 +122,57 @@ export async function handleCertHuquqTestsList(ctx: MyContext) {
 
   const isPro = ctx.user?.isPro || false;
 
-  // Find or create category for Huquq Milliy Sertifikat Testlari
-  let cat = await prisma.category.findUnique({ where: { name: '📄 Huquq Milliy Sertifikat Testlari' } });
-  if (!cat) {
-    cat = await prisma.category.create({
-      data: {
-        name: '📄 Huquq Milliy Sertifikat Testlari',
-        description: 'Huquqshunoslik bo‘yicha Milliy sertifikat rasmiy va tahliliy pullik PDF test to‘plamlari',
-      },
-    });
-  }
+  // Find all categories for Milliy Sertifikat & DTM test materials
+  const testCats = await prisma.category.findMany({
+    where: {
+      OR: [
+        { name: { contains: 'Huquq Milliy Sertifikat' } },
+        { name: { contains: 'Milliy Sertifikat' } },
+        { name: { contains: 'DTMB' } },
+        { name: { contains: 'DTM' } },
+      ],
+    },
+    select: { id: true },
+  });
+  const catIds = testCats.map((c) => c.id);
 
-  // Find articles under this category
+  // Find articles under these categories that are tests or have price > 0 or fileType 'pdf_quiz'
   let articles = await prisma.legalArticle.findMany({
-    where: { categoryId: cat.id },
+    where: {
+      OR: [
+        { categoryId: { in: catIds }, price: { gt: 0 } },
+        { categoryId: { in: catIds }, fileType: 'pdf_quiz' },
+        { fileType: 'pdf_quiz' },
+        {
+          categoryId: { in: catIds },
+          OR: [
+            { title: { contains: 'Test' } },
+            { title: { contains: 'Qo‘llanma' } },
+            { title: { contains: 'DTM' } },
+          ],
+        },
+      ],
+    },
     orderBy: { createdAt: 'desc' },
   });
 
-  // Seed sample test materials if empty
+  // If no articles found, ensure default category exists and seed samples
   if (articles.length === 0) {
+    let huquqCat = await prisma.category.findUnique({ where: { name: '📄 Huquq Milliy Sertifikat Testlari' } });
+    if (!huquqCat) {
+      huquqCat = await prisma.category.create({
+        data: {
+          name: '📄 Huquq Milliy Sertifikat Testlari',
+          description: 'Huquqshunoslik bo‘yicha Milliy sertifikat rasmiy va tahliliy pullik PDF test to‘plamlari',
+        },
+      });
+    }
+
     const sample1 = await prisma.legalArticle.create({
       data: {
         title: 'Huquq Milliy Sertifikat 2026 PDF Test To‘plami (500 ta Savol + Javoblar)',
         content: 'O‘zR DTM hamda Adliya vazirligi formati bo‘yicha 500 ta rasmiy va tahliliy Huquq milliy sertifikat testlari to‘plami va to‘liq javoblar sharhi.',
-        categoryId: cat.id,
+        categoryId: huquqCat.id,
         isPdfBook: true,
         fileType: 'pdf_quiz',
         price: 20000,
@@ -132,7 +182,7 @@ export async function handleCertHuquqTestsList(ctx: MyContext) {
       data: {
         title: 'Huquqshunoslik Milliy Sertifikat DTM Blok Testlari (300 ta Kazus + Tahlil)',
         content: 'Konstitutsiyaviy, Fuqarolik, Mehnat va Jinoyat huquqiga oid murakkab kazusli testlar to‘plami va javob kaliti.',
-        categoryId: cat.id,
+        categoryId: huquqCat.id,
         isPdfBook: true,
         fileType: 'pdf_quiz',
         price: 15000,
@@ -148,20 +198,30 @@ export async function handleCertHuquqTestsList(ctx: MyContext) {
 
   articles.forEach((art, idx) => {
     const priceText = art.price > 0 ? `${art.price.toLocaleString('uz-UZ')} UZS` : 'BEPUL';
-    text += `<b>${idx + 1}. 📄 ${escapeHTML(art.title)}</b>\n`;
-    text += `📝 <i>${escapeHTML(art.content)}</i>\n`;
+    const displayTitle = art.title.length > 50 ? art.title.slice(0, 47) + '...' : art.title;
+    const desc = art.content.length > 120 ? art.content.slice(0, 117) + '...' : art.content;
+
+    text += `<b>${idx + 1}. 📄 ${escapeHTML(displayTitle)}</b>\n`;
+    text += `📝 <i>${escapeHTML(desc)}</i>\n`;
     text += `🏷 <b>Narxi:</b> <code>${isPro ? 'BEPUL (VIP PRO)' : priceText}</code>\n${formatSectionDivider()}\n`;
 
+    const buttonLabel = displayTitle.slice(0, 22);
     if (isPro || art.price === 0) {
-      inlineButtons.push([Markup.button.callback(`📥 Yuklab Olish: ${art.title.slice(0, 20)}...`, `dl_pdf_${art.id}`)]);
+      inlineButtons.push([Markup.button.callback(`📥 Yuklab Olish: ${buttonLabel}`, `dl_pdf_${art.id}`)]);
     } else {
-      inlineButtons.push([Markup.button.callback(`💳 Sotib Olish (${priceText}): ${art.title.slice(0, 15)}...`, `cert_buy_pdf_${art.id}`)]);
+      inlineButtons.push([Markup.button.callback(`💳 Sotib Olish (${priceText}): ${buttonLabel}`, `cert_buy_pdf_${art.id}`)]);
     }
   });
 
-  inlineButtons.push([Markup.button.callback('🔙 Ortga', 'cert_home')]);
+  inlineButtons.push([Markup.button.callback('🔙 Sertifikat Bo‘limi', 'cert_home')]);
 
-  return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) }).catch(() => {});
+  if (ctx.callbackQuery) {
+    return ctx.editMessageText(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) }).catch(() => {
+      return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) });
+    });
+  }
+
+  return ctx.reply(text, { parse_mode: 'HTML', ...Markup.inlineKeyboard(inlineButtons) });
 }
 
 export async function handleCertBuyPdfPrompt(ctx: MyContext, articleId: number) {
@@ -179,8 +239,8 @@ export async function handleCertBuyPdfPrompt(ctx: MyContext, articleId: number) 
     step: 'AWAITING_RECEIPT',
   };
 
-  let html = formatHeader(`💳 PDF Material Sotib Olish`);
-  html += `<b>Material:</b> ${escapeHTML(article.title)}\n`;
+  let html = formatHeader(`💳 PDF Test/Material Xarid Qilish`);
+  html += `📄 <b>Material:</b> ${escapeHTML(article.title)}\n`;
   html += `📌 <b>To‘lov Summasi:</b> <code>${price}</code>\n`;
   html += `💳 <b>Karta Raqami:</b> <code>${config.adminCardNumber}</code>\n`;
   html += `👤 <b>Karta Egasi:</b> ${config.adminCardHolder}\n\n`;
@@ -189,9 +249,19 @@ export async function handleCertBuyPdfPrompt(ctx: MyContext, articleId: number) 
   html += `2. To‘lov <b>chekining rasm (skrinshot)ini</b> ushbu chatga yuboring.\n`;
   html += `3. Admin to‘lovni tasdiqlashi bilanoq PDF fayl avtomatik tarzda Telegramingizga yetkazib beriladi! 🚀`;
 
-  const keyboard = Markup.inlineKeyboard([[Markup.button.callback('🔙 Ortga', 'cert_pdf_books')]]);
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('📑 Huquq Testlariga Qaytish', 'cert_huquq_tests')],
+    [Markup.button.callback('📚 PDF Bo‘limiga Qaytish', 'cert_pdf_books')],
+    [Markup.button.callback('🔙 Sertifikat Bo‘limiga Qaytish', 'cert_home')],
+  ]);
 
-  return ctx.editMessageText(html, { parse_mode: 'HTML', ...keyboard }).catch(() => {});
+  if (ctx.callbackQuery) {
+    return ctx.editMessageText(html, { parse_mode: 'HTML', ...keyboard }).catch(() => {
+      return ctx.reply(html, { parse_mode: 'HTML', ...keyboard });
+    });
+  }
+
+  return ctx.reply(html, { parse_mode: 'HTML', ...keyboard });
 }
 
 export async function handleCertExamStart(ctx: MyContext) {

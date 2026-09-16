@@ -20,6 +20,7 @@ prisma/*.db-journal
 *.sqlite
 *.log
 cf.log
+*.bak
 
 # IDE & OS system files
 .DS_Store
