@@ -66,8 +66,8 @@ export class AiService {
             },
           });
 
-          if (totalAsked >= 50) {
-            return `⚠️ <b>Bepul AI limit tugadi!</b>\n\nSiz <b>50/50 ta</b> bepul AI yuridik savollar limitingizdan foydalandingiz.\n\n🚀 <b>Cheksiz AI konsultatsiyalar</b>, AI Shartnoma Audit va PDF Hujjat yaratish uchun <b>VIP PRO</b> obunasini faollashtiring!`;
+          if (totalAsked >= 2) {
+            return `⚠️ <b>Bepul AI limit tugadi!</b>\n\nSiz <b>2/2 ta</b> bepul AI yuridik savollar limitingizdan foydalandingiz.\n\n👑 <b>Cheksiz AI konsultatsiyalar</b>, AI Shartnoma Audit va PDF Hujjat yaratish uchun <b>VIP PRO</b> obunasini faollashtiring!`;
           }
         }
       } catch (dbErr) {
