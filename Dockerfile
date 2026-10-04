@@ -14,6 +14,7 @@ RUN npm install
 COPY . .
 
 RUN npx prisma generate
+RUN npx prisma db push --skip-generate
 RUN npm run build
 
 # Step 2: Production stage
