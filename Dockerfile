@@ -26,7 +26,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV DATABASE_URL="file:./dev.db"
-ENV PORT=3000
+ENV PORT=7860
 
 COPY package*.json ./
 RUN npm install --omit=dev
@@ -37,6 +37,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-EXPOSE 3000
+EXPOSE 7860
 
 CMD ["node", "dist/index.js"]
+

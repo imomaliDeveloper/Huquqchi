@@ -1,3 +1,13 @@
+---
+title: Huquqchi Bot
+emoji: ⚖️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # ⚖️ HuquqchiBot / Huquq AI — Professional Telegram Bot Startup
 
 **HuquqchiBot / Huquq AI** — O‘zbekiston fuqarolari, abituriyentlar, talabalar, tadbirkorlar va yuristlar uchun mo‘ljallangan professional, masshtablashuvchan Telegram bot backend tizimi. Tizim huquqiy bilimlarni olish, qonunchilik moddalarini qidirish, testlar ishlash hamda Google Gemini AI orqali aqlli huquqiy yordam ko‘rsatish imkonini beradi.
