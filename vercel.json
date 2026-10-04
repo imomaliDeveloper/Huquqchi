@@ -4,7 +4,17 @@
       "includeFiles": "prisma/**"
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "0 4 * * *"
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/api/cron",
+      "destination": "/api/cron.ts"
+    },
     {
       "source": "/api/set-webhook",
       "destination": "/api/set-webhook.ts"
