@@ -10,6 +10,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({
         ok: false,
         error: 'BOT_TOKEN muhit o‘zgaruvchisi topilmadi yoki bo‘sh!',
+        tokenLength: (process.env.BOT_TOKEN || '').length,
+        rawLength: rawToken.length,
         availableEnvs: Object.keys(process.env).filter(k => !k.startsWith('npm_') && !k.startsWith('VERCEL_')),
       });
     }
