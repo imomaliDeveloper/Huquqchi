@@ -30,6 +30,7 @@ async function bootstrap() {
     await bot.telegram.setMyCommands([
       { command: 'start', description: 'Botni ishga tushirish & Bosh menyu' },
       { command: 'ai', description: 'AI Yuristga savol berish' },
+      { command: 'motivation', description: 'Kun Motivatsiyasi & Imtihon Taymeri' },
       { command: 'quiz', description: 'Milliy Sertifikat imtihon testi' },
       { command: 'constitution', description: 'Konstitutsiya moddalari & Audiosi' },
       { command: 'laws', description: '55+ Rasmiy Qonun va Kodekslar' },

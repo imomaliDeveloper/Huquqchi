@@ -11,8 +11,11 @@ export async function handleAiView(ctx: MyContext) {
     const askedCount = await prisma.userActivity.count({
       where: { userId: ctx.user.id, action: 'AI_QUESTION' },
     });
-    const remaining = Math.max(0, 2 - askedCount);
-    subNote = `\n📊 <i>Sizning bepul savollar limitingiz: <b>${remaining}/2 ta</b> qoldi.</i>\n\n`;
+    const maxAllowed = 2 + ((ctx.user.referralCount || 0) * 2);
+    const remaining = Math.max(0, maxAllowed - askedCount);
+    subNote = `\n📊 <i>Sizning bepul savollar limitingiz: <b>${remaining}/${maxAllowed} ta</b> qoldi.</i>` +
+      (ctx.user.referralCount > 0 ? ` <i>(+${ctx.user.referralCount * 2} ta taklif bonusi)</i>` : '') +
+      `\n💡 <i>Har bir do‘stingizni taklif qilib, yana <b>+2 ta bepul AI savol</b> olishingiz mumkin!</i>\n\n`;
   } else if (ctx.user?.isPro) {
     subNote = `\n👑 <b>VIP PRO statusingiz faol! Siz uchun AI konsultatsiyalar cheksiz.</b>\n\n`;
   }
@@ -40,15 +43,17 @@ export async function handleAiQuestionMessage(ctx: MyContext) {
     return ctx.reply('⚠️ Iltimos, avval /start buyrug‘i orqali ro‘yxatdan o‘ting.');
   }
 
-  // Check 2-Question Limit for Non-PRO users
+  // Check Dynamic Question Limit for Non-PRO users (Base 2 + 2 per referral)
   if (!ctx.user.isPro) {
     const askedCount = await prisma.userActivity.count({
       where: { userId: ctx.user.id, action: 'AI_QUESTION' },
     });
+    const maxAllowed = 2 + ((ctx.user.referralCount || 0) * 2);
 
-    if (askedCount >= 2) {
-      let limitText = `⚠️ <b>BEPUL AI SAVOL-JAVOB LIMITI TUGADI! (2/2 ishlatildi)</b>\n\n`;
-      limitText += `Siz 2 ta bepul AI huquqiy savol imkoniyatidan to‘liq foydalandingiz.\n\n`;
+    if (askedCount >= maxAllowed) {
+      let limitText = `⚠️ <b>BEPUL AI SAVOL-JAVOB LIMITI TUGADI! (${askedCount}/${maxAllowed} ishlatildi)</b>\n\n`;
+      limitText += `Siz barcha bepul AI yuridik savollaringizdan to‘liq foydalandingiz.\n\n`;
+      limitText += `🎁 <b>TEKIN SAVOL OLISH:</b>\nDo‘stlaringizni botga taklif qiling — har bir do‘stingiz uchun sizga <b>+2 ta bepul AI savol</b> sovg‘a qilinadi!\n\n`;
       limitText += `👑 <b>VIP PRO ta‘rifiga o‘ting va quyidagi imkoniyatlarga ega bo‘ling:</b>\n`;
       limitText += ` ├ ⚖️ Cheksiz AI huquqiy konsultatsiyalar\n`;
       limitText += ` ├ 🎧 Cheksiz ovozli AI muloqot\n`;
@@ -57,6 +62,7 @@ export async function handleAiQuestionMessage(ctx: MyContext) {
       limitText += `${UI.DIVIDER}`;
 
       const buttons = [
+        [Markup.button.callback('🔗 Do‘stlarni Taklif Qilish (+2 Savol)', 'referral_home')],
         [Markup.button.callback('👑 VIP PRO ga O‘tish (Card Pay)', 'buy_pro_card_monthly')],
       ];
 
@@ -80,13 +86,17 @@ export async function handleAiQuestionMessage(ctx: MyContext) {
       const askedCountAfter = await prisma.userActivity.count({
         where: { userId: ctx.user.id, action: 'AI_QUESTION' },
       });
+      const maxAllowed = 2 + ((ctx.user.referralCount || 0) * 2);
 
-      if (askedCountAfter >= 2) {
-        aiResponse += `\n\n----------------------------------------\n⚠️ <i>Eslatma: Siz oxirgi bepul AI savolingizdan foydalandingiz (2/2). Keyingi savollar va cheksiz konsultatsiyalar uchun VIP PRO ga o‘ting!</i>`;
-        replyButtons.push([Markup.button.callback('👑 VIP PRO ga O‘tish (Card Pay)', 'buy_pro_card_monthly')]);
+      if (askedCountAfter >= maxAllowed) {
+        aiResponse += `\n\n----------------------------------------\n⚠️ <i>Eslatma: Siz oxirgi bepul AI savolingizdan foydalandingiz (${askedCountAfter}/${maxAllowed}).\n🎁 Do‘stlaringizni taklif qilib, har biri uchun +2 tadan savol oling yoki VIP PRO ga o‘ting!</i>`;
+        replyButtons.push([
+          Markup.button.callback('🔗 Do‘stlarni Taklif Qilish (+2 Savol)', 'referral_home'),
+          Markup.button.callback('👑 VIP PRO', 'buy_pro_card_monthly'),
+        ]);
       } else {
-        const remaining = 2 - askedCountAfter;
-        aiResponse += `\n\n💡 <i>Eslatma: Siz ${askedCountAfter}/2 ta bepul AI savolingizdan foydalandingiz (Yana ${remaining} ta qoldi).</i>`;
+        const remaining = maxAllowed - askedCountAfter;
+        aiResponse += `\n\n💡 <i>Eslatma: Siz ${askedCountAfter}/${maxAllowed} ta bepul AI savolingizdan foydalandingiz (Yana ${remaining} ta qoldi).</i>`;
       }
     }
 

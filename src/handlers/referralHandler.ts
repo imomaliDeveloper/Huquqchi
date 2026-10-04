@@ -103,6 +103,27 @@ export async function processReferralLink(newTelegramId: number, startPayload: s
       });
     }
 
+    // Send instant notification to referrer
+    try {
+      const { Telegram } = await import('telegraf');
+      const tg = new Telegram(config.botToken);
+      let notifyText = `🎉 <b>YANGI DO‘STINGIZ BOTGA QO‘SHILDI!</b>\n\n`;
+      notifyText += `Sizning taklif havolangiz orqali yangi foydalanuvchi botga a‘zo bo‘ldi.\n\n`;
+      notifyText += `🎁 <b>Sizga +2 ta BEPUL AI YURIST SAVOLI qo‘shildi!</b>\n`;
+      notifyText += `📊 Jami taklif qilgan do‘stlaringiz: <b>${newCount} ta</b>`;
+
+      if (newCount % 10 === 0) {
+        notifyText += `\n\n👑 <b>TABRIKLAYMIZ!</b> Siz 10 ta do‘st taklif qilib, <b>1 OYLIK BEPUL VIP PRO</b> obunasini qo‘lga kiritdingiz!`;
+      } else {
+        const remainingToPro = 10 - (newCount % 10);
+        notifyText += `\n🎯 <i>Yana ${remainingToPro} ta do‘st taklif qilsangiz, 1 oylik BEPUL VIP PRO beriladi!</i>`;
+      }
+
+      await tg.sendMessage(referrer.telegramId.toString(), notifyText, { parse_mode: 'HTML' }).catch(() => {});
+    } catch (notifErr) {
+      console.warn('⚠️ Could not send referral notification to referrer:', notifErr);
+    }
+
     return { referrer, newCount };
   } catch (err) {
     console.error('Error processing referral link:', err);

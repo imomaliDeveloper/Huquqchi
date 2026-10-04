@@ -97,8 +97,10 @@ import {
   handleAdminConstitutionAudioClear,
 } from '../handlers/constitutionHandler';
 import { handleSosView, handleSosTopic } from '../handlers/sosHandler';
-import { handleCalculatorView, handleCalcSelection, handleCalcCalculation } from '../handlers/calculatorHandler';
+import { handleCalculatorView, handleCalcSelection, handleCalcCalculation, handleAlimentCalculation, handleYhqFineCalculation } from '../handlers/calculatorHandler';
 import { handleLexSearchView, handleCodexDetails, handleCodexSubTopic } from '../handlers/lexSearchHandler';
+import { MOTIVATION_QUOTES } from '../services/motivationService';
+import { ExamScraperService } from '../services/examScraperService';
 
 const botToken = (process.env.BOT_TOKEN || config.botToken || '').replace(/['"]/g, '').trim();
 export const bot = new Telegraf<MyContext>(botToken);
@@ -155,13 +157,36 @@ export function setupBotHandlers() {
 
   // Legal Calculator actions
   bot.action('calc_home', handleCalculatorView);
-  bot.action(/^calc_(civil|econ|admin|penya)$/, (ctx) => handleCalcSelection(ctx, ctx.match[1]!));
+  bot.action(/^calc_(civil|econ|admin|penya|aliment|yhq)$/, (ctx) => handleCalcSelection(ctx, ctx.match[1]!));
   bot.action(/^calc_(civil|econ)_val_(\d+)$/, (ctx) =>
     handleCalcCalculation(ctx, ctx.match[1]! as any, parseInt(ctx.match[2]!, 10))
+  );
+  bot.action(/^calc_aliment_val_(\d+)$/, (ctx) =>
+    handleAlimentCalculation(ctx, parseInt(ctx.match[1]!, 10))
+  );
+  bot.action(/^calc_yhq_fine_(\d+)_(.+)$/, (ctx) =>
+    handleYhqFineCalculation(ctx, parseInt(ctx.match[1]!, 10), ctx.match[2]!)
   );
   bot.action(/^calc_penya_preset_(\d+)_(\d+)$/, (ctx) =>
     handleCalcCalculation(ctx, 'penya', parseInt(ctx.match[1]!, 10), parseInt(ctx.match[2]!, 10))
   );
+
+  // Daily Motivation & Countdown command
+  bot.command('motivation', async (ctx) => {
+    const quoteIndex = Math.floor(Math.random() * MOTIVATION_QUOTES.length);
+    const quote = MOTIVATION_QUOTES[quoteIndex] || MOTIVATION_QUOTES[0];
+    const examConfig = ExamScraperService.getExamConfig();
+    const diffMs = new Date(examConfig.targetDate).getTime() - Date.now();
+    const daysLeft = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    const text =
+      `☀️ <b>Xayrli kun, ${ctx.from?.first_name || 'Bo‘lajak Yurist'}!</b>\n\n` +
+      `⏳ <b>Imtihon Taymeri:</b>\n` +
+      `Huquqshunoslik imtihoniga <b>${daysLeft} KUN</b> qoldi!\n\n` +
+      `🔥 <b>Kun Motivatsiyasi:</b>\n` +
+      `<i>${quote}</i>\n\n` +
+      `💡 <i>Bugun botda test ishlashni va yangi moddalarni o‘rganishni unutmang! Har bir daqiqa — sizning talabalik sari qadamingizdir!</i>`;
+    return ctx.reply(text, { parse_mode: 'HTML' });
+  });
 
   // Lex.uz Top 5 Codes actions
   bot.action('lex_home', handleLexSearchView);
